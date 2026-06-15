@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply font-sans antialiased;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-white text-[#a24809] font-semibold rounded-full
+           shadow-lg shadow-black/20 hover:shadow-black/30
+           transform hover:-translate-y-1 transition-all duration-300;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-white/80 font-medium py-2 px-4 rounded-full
+           border border-white/30 hover:bg-white/10 hover:text-white
+           transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply transform hover:-translate-y-2 hover:shadow-xl transition-all duration-300;
+  }
+
+  .blob {
+    @apply rounded-full blur-3xl opacity-60;
+  }
+}
