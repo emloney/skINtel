@@ -194,9 +194,7 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#e8aa80] rounded-xl flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#a24809]" />
-            </div>
+            <img src="/logo.png" alt="SkinTel Logo" className="w-10 h-10 object-contain mix-blend-multiply" />
             <span className="font-display font-bold text-xl text-[#a24809]">SkinTel.</span>
           </div>
 
@@ -230,13 +228,32 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-[#faf5ef]">
-      <button
-        onClick={() => navigate('/auth')}
-        className="fixed top-6 right-6 z-[100] flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#faf5ef]/80 backdrop-blur-md border border-[#e8aa80] text-[#a24809] font-medium text-sm hover:bg-[#ffe4c9]/90 hover:border-[#a24809] transition-all duration-300 shadow-sm"
+      {/* Header */}
+      <header
+        style={{ backgroundColor: '#F9F4EE', color: '#a24809' }}
+        className="sticky top-0 z-[100] flex items-center justify-between px-6 py-3 shadow-sm border-b border-[#e8aa80]/40"
       >
-        <LogOut className="w-4 h-4" />
-        Logout
-      </button>
+        {/* Logo + Name */}
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="SkinTel Logo" className="w-10 h-10 object-contain mix-blend-multiply" />
+          <span
+            className="font-display font-bold text-xl tracking-tight"
+            style={{ color: '#a24809' }}
+          >
+            SkinTel.
+          </span>
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={() => navigate('/auth')}
+          style={{ color: '#a24809', borderColor: '#e8aa80' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white/60 backdrop-blur-sm font-medium text-sm hover:bg-[#ffe4c9] transition-all duration-200 shadow-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+      </header>
 
       <Hero />
       <HowItWorks />

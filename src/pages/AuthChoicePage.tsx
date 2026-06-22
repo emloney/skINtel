@@ -24,8 +24,8 @@ export default function AuthChoicePage() {
         className="relative w-full max-w-2xl"
       >
         <motion.div variants={fadeInUp} className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6">
-            <Sparkles className="w-8 h-8 text-[#a24809]" />
+          <div className="inline-flex items-center justify-center mb-6">
+            <img src="/logo.png" alt="SkinTel Logo" className="w-20 h-20 object-contain mix-blend-multiply" />
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-[#a24809] mb-4">
             Welcome to SkinTel.

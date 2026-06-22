@@ -60,9 +60,7 @@ export default function AuthPage() {
 
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-[#ffe4c9] rounded-2xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-[#a24809]" />
-            </div>
+            <img src="/logo.png" alt="SkinTel Logo" className="w-12 h-12 object-contain mix-blend-multiply" />
             <span className="font-display font-bold text-2xl text-[#a24809]">SkinTel.</span>
           </div>
 
