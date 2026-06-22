@@ -61,4 +61,15 @@ body {
   .text-glare:hover {
     background-position: -160% 0;
   }
+
+  .auth-label {
+    @apply block text-sm font-medium text-[#a24809] mb-2;
+  }
+
+  .auth-input {
+    @apply w-full py-3.5 px-4 rounded-2xl bg-[#faf5ef] border-2 border-transparent
+           text-[#604f42] placeholder:text-[#c4b39c]
+           focus:outline-none focus:border-[#e8aa80] focus:bg-white
+           transition-all duration-300;
+  }
 }
