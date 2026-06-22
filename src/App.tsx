@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Microscope, Check } from 'lucide-react';
+import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
 import Grainient from './components/Grainient';
 import SplashScreen from './components/SplashScreen';
+import GradualBlur from './components/GradualBlur';
 
 // Animation variants
 const fadeInUp = {
@@ -56,10 +57,12 @@ function Hero() {
           variants={stagger}
           className="space-y-8"
         >
-          <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl font-display font-extrabold text-white leading-tight drop-shadow-lg">
-            Is your skincare
-            <span className="block text-[#ffe4c9]"> actually safe?</span>
-          </motion.h1>
+          <motion.div variants={fadeInUp} className="flex justify-center">
+            <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-tight drop-shadow-lg text-glare">
+              Is your skincare
+              <span className="block"> actually safe?</span>
+            </h1>
+          </motion.div>
 
           <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
             Scan any product label and get instant, science-backed insights on what's really in your skincare. No chemistry degree required.
@@ -245,10 +248,31 @@ function App() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-[#faf5ef]">
+      <div className="relative min-h-screen bg-[#faf5ef]">
+        {/* Logout button */}
+        <button
+          onClick={() => console.log('logout')}
+          className="fixed top-6 right-6 z-[100] flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#faf5ef]/80 backdrop-blur-md border border-[#e8aa80] text-[#a24809] font-medium text-sm hover:bg-[#ffe4c9]/90 hover:border-[#a24809] transition-all duration-300 shadow-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+
         <Hero />
         <HowItWorks />
         <Footer />
+
+        {/* Gradual blur at the bottom of the page */}
+        <GradualBlur
+          target="page"
+          position="bottom"
+          height="8rem"
+          strength={2}
+          divCount={6}
+          curve="bezier"
+          exponential={true}
+          opacity={1}
+        />
       </div>
     </>
   );

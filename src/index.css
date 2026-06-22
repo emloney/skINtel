@@ -32,4 +32,33 @@ body {
   .blob {
     @apply rounded-full blur-3xl opacity-60;
   }
+
+  .text-glare {
+    background-image: linear-gradient(
+      110deg,
+      #ffffff 0%,
+      #ffffff 28%,
+      #fffced 36%,
+      #fff3d6 42%,
+      #ffe4c9 48%,
+      #ffd99a 50%,
+      #ffe4c9 52%,
+      #fff3d6 58%,
+      #fffced 64%,
+      #ffffff 72%,
+      #ffffff 100%
+    );
+    background-size: 300% 100%;
+    background-position: 160% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    transition: background-position 2.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+    cursor: pointer;
+  }
+
+  .text-glare:hover {
+    background-position: -160% 0;
+  }
 }
