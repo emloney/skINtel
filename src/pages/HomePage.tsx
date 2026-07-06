@@ -14,6 +14,7 @@ const stagger = {
 };
 
 function Hero() {
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
@@ -65,6 +66,7 @@ function Hero() {
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/search')}
               className="btn-primary text-lg px-10 py-4"
             >
               Check My Products
