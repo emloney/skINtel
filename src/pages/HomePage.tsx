@@ -1,19 +1,23 @@
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import Grainient from '../components/Grainient';
 import GradualBlur from '../components/GradualBlur';
+import ProfileMenu from '../components/ProfileMenu';
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 };
 
-const stagger = {
+const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.15 } },
 };
 
 function Hero() {
+  const navigate = useNavigate();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
@@ -65,6 +69,7 @@ function Hero() {
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/products')}
               className="btn-primary text-lg px-10 py-4"
             >
               Check My Products
@@ -227,16 +232,25 @@ function Footer() {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleLogout = () => {
+    signOut();
+    navigate('/auth', { replace: true });
+  };
 
   return (
     <div className="relative min-h-screen bg-[#faf5ef]">
-      <button
-        onClick={() => navigate('/auth')}
-        className="fixed top-6 right-6 z-[100] flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#faf5ef]/80 backdrop-blur-md border border-[#e8aa80] text-[#a24809] font-medium text-sm hover:bg-[#ffe4c9]/90 hover:border-[#a24809] transition-all duration-300 shadow-sm"
-      >
-        <LogOut className="w-4 h-4" />
-        Logout
-      </button>
+      <div className="fixed top-6 right-6 z-[100] flex items-center gap-3">
+        <ProfileMenu />
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#faf5ef]/80 backdrop-blur-md border border-[#e8aa80] text-[#a24809] font-medium text-sm hover:bg-[#ffe4c9]/90 hover:border-[#a24809] transition-all duration-300 shadow-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+      </div>
 
       <Hero />
       <HowItWorks />
