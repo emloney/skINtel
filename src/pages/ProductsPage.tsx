@@ -5,12 +5,15 @@ import { ArrowLeft, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
+import { analyzeProduct, askAnalysis, AnalysisResult, ChatMessage, UserProfile } from '../lib/analysis';
+import AnalysisPanel from '../components/AnalysisPanel';
 
 interface Product {
   id: number;
   brand: string;
   product_name: string;
   product_type: string | null;
+  ingredients_parsed: string[] | null;
 }
 
 interface ShelfItem {
@@ -55,6 +58,19 @@ export default function ProductsPage() {
   const [shelfError, setShelfError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const [profile, setProfile] = useState<UserProfile>({});
+  // Per-shelf-item analysis state, keyed by user_products row id.
+  const [analyses, setAnalyses] = useState<Record<string, AnalysisResult>>({});
+  const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
+  // AI layer (bonus — never blocks the deterministic result).
+  // conversation[itemId][0] is the opening summary; later entries are chat turns.
+  const [conversations, setConversations] = useState<Record<string, ChatMessage[]>>({});
+  const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+  const [aiFailed, setAiFailed] = useState<Record<string, boolean>>({});
+  const [chatSending, setChatSending] = useState<Record<string, boolean>>({});
+  const [chatErrored, setChatErrored] = useState<Record<string, boolean>>({});
+
   const friendlyError = (message: string) =>
     message.includes('schema cache') || message.includes('does not exist')
       ? 'The shelf table is not set up yet — run supabase/user_products_table.sql in your Supabase SQL Editor.'
@@ -68,7 +84,7 @@ export default function ProductsPage() {
     try {
       const { data, error } = await supabase
         .from('user_products')
-        .select('id, product:indian_products(id, brand, product_name, product_type)')
+        .select('id, product:indian_products(id, brand, product_name, product_type, ingredients_parsed)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -87,6 +103,109 @@ export default function ProductsPage() {
     loadShelf();
   }, [loadShelf]);
 
+  // ── User profile (for personalizing the analysis) ──
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('skin_type, skin_concerns, allergies, is_pregnant')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (active && data) {
+        setProfile({
+          skinType: data.skin_type,
+          skinConcerns: data.skin_concerns,
+          allergies: data.allergies,
+          isPregnant: data.is_pregnant,
+        });
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // ── Analyze a shelf product ──
+  const analyzeItem = async (item: ShelfItem) => {
+    // Already analyzed → just toggle the panel.
+    if (analyses[item.id]) {
+      setOpenPanels((prev) => ({ ...prev, [item.id]: !prev[item.id] }));
+      return;
+    }
+    const ingredients = item.product.ingredients_parsed ?? [];
+    if (ingredients.length === 0) {
+      setNotice(`We don't have an ingredient list for ${displayName(item.product)} yet.`);
+      return;
+    }
+    setAnalyzing(item.id);
+    setNotice(null);
+    try {
+      const result = await analyzeProduct(ingredients, profile);
+      setAnalyses((prev) => ({ ...prev, [item.id]: result }));
+      setOpenPanels((prev) => ({ ...prev, [item.id]: true }));
+
+      // Best-effort history write — never block the UI on it.
+      if (user) {
+        supabase
+          .from('scan_history')
+          .insert({
+            user_id: user.id,
+            product_name: displayName(item.product),
+            safety_score: result.score,
+            flags_found: result.flags.length + result.banned.length,
+          })
+          .then(({ error }) => {
+            if (error) console.warn('scan_history write skipped:', error.message);
+          });
+      }
+
+      // AI opening summary — bonus layer. If the Edge Function isn't deployed
+      // or the API is down, we just hide it; the findings above still show.
+      setAiFailed((prev) => ({ ...prev, [item.id]: false }));
+      setAiLoading((prev) => ({ ...prev, [item.id]: true }));
+      askAnalysis({ productName: displayName(item.product), result, profile, messages: [] })
+        .then((summary) =>
+          setConversations((prev) => ({ ...prev, [item.id]: [{ role: 'assistant', content: summary }] }))
+        )
+        .catch((err) => {
+          console.warn('AI summary unavailable:', errorMessage(err, 'unknown'));
+          setAiFailed((prev) => ({ ...prev, [item.id]: true }));
+        })
+        .finally(() => setAiLoading((prev) => ({ ...prev, [item.id]: false })));
+    } catch (err: unknown) {
+      setNotice(friendlyError(errorMessage(err, 'Could not analyze this product.')));
+    } finally {
+      setAnalyzing(null);
+    }
+  };
+
+  // ── Send a follow-up chat question about an analyzed product ──
+  const sendChatMessage = (item: ShelfItem, text: string) => {
+    const result = analyses[item.id];
+    const existing = conversations[item.id];
+    if (!result || !existing) return;
+
+    const next: ChatMessage[] = [...existing, { role: 'user', content: text }];
+    setConversations((prev) => ({ ...prev, [item.id]: next }));
+    setChatErrored((prev) => ({ ...prev, [item.id]: false }));
+    setChatSending((prev) => ({ ...prev, [item.id]: true }));
+
+    askAnalysis({ productName: displayName(item.product), result, profile, messages: next })
+      .then((reply) =>
+        setConversations((prev) => ({
+          ...prev,
+          [item.id]: [...next, { role: 'assistant', content: reply }],
+        }))
+      )
+      .catch((err) => {
+        console.warn('Chat reply unavailable:', errorMessage(err, 'unknown'));
+        setChatErrored((prev) => ({ ...prev, [item.id]: true }));
+      })
+      .finally(() => setChatSending((prev) => ({ ...prev, [item.id]: false })));
+  };
+
   // ── Debounced search ──
   useEffect(() => {
     const q = query.trim();
@@ -103,7 +222,7 @@ export default function ProductsPage() {
         const term = q.replace(/[,()]/g, ' ').trim();
         const { data, error } = await supabase
           .from('indian_products')
-          .select('id, brand, product_name, product_type')
+          .select('id, brand, product_name, product_type, ingredients_parsed')
           .or(`product_name.ilike.%${term}%,brand.ilike.%${term}%`)
           .order('brand')
           .limit(8);
@@ -344,33 +463,71 @@ export default function ProductsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between gap-4 bg-white rounded-2xl px-5 py-4 shadow-sm border border-[#e8aa80]/20"
+                    className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-[#e8aa80]/20"
                   >
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[#604f42] truncate">
-                        {displayName(item.product)}
-                      </p>
-                      <p className="text-sm text-[#8c735c]">
-                        {item.product.brand}
-                        {item.product.product_type
-                          ? ` · ${displayType(item.product.product_type)}`
-                          : ''}
-                      </p>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#604f42] truncate">
+                          {displayName(item.product)}
+                        </p>
+                        <p className="text-sm text-[#8c735c]">
+                          {item.product.brand}
+                          {item.product.product_type
+                            ? ` · ${displayType(item.product.product_type)}`
+                            : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => analyzeItem(item)}
+                          disabled={analyzing === item.id}
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 ${
+                            analyzing === item.id
+                              ? 'bg-[#faf5ef] text-[#c4b39c] cursor-wait'
+                              : 'bg-[#a24809] text-white hover:bg-[#8a3a07]'
+                          }`}
+                        >
+                          {analyzing === item.id ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              Analyzing…
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5" />
+                              {analyses[item.id]
+                                ? openPanels[item.id]
+                                  ? 'Hide'
+                                  : 'Results'
+                                : 'Analyze'}
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFromShelf(item)}
+                          aria-label={`Remove ${displayName(item.product)}`}
+                          className="p-2 rounded-full text-[#c4b39c] hover:text-[#a24809] hover:bg-[#faf5ef] transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#faf5ef] text-[#c4b39c] text-xs font-medium select-none">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Analysis coming soon
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeFromShelf(item)}
-                        aria-label={`Remove ${displayName(item.product)}`}
-                        className="p-2 rounded-full text-[#c4b39c] hover:text-[#a24809] hover:bg-[#faf5ef] transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+
+                    <AnimatePresence>
+                      {analyses[item.id] && openPanels[item.id] && (
+                        <AnalysisPanel
+                          result={analyses[item.id]}
+                          conversation={conversations[item.id]}
+                          aiLoading={aiLoading[item.id]}
+                          aiFailed={aiFailed[item.id]}
+                          chatSending={chatSending[item.id]}
+                          chatErrored={chatErrored[item.id]}
+                          onSendMessage={(text) => sendChatMessage(item, text)}
+                        />
+                      )}
+                    </AnimatePresence>
                   </motion.li>
                 ))}
               </AnimatePresence>
