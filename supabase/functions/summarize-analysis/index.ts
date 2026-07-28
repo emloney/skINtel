@@ -132,22 +132,38 @@ Deno.serve(async (req: Request) => {
     );
     const contents = buildContents(messages ?? []);
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    const payload = JSON.stringify({
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      contents,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
+    });
+
+    // The free tier caps requests-per-minute; a burst returns 429. Retry a few
+    // times with a short backoff so a transient spike heals itself.
+    const backoffMs = [0, 3000, 6000];
+    let geminiRes: Response | null = null;
+    for (let attempt = 0; attempt < backoffMs.length; attempt++) {
+      if (backoffMs[attempt] > 0) {
+        await new Promise((r) => setTimeout(r, backoffMs[attempt]));
+      }
+      geminiRes = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
-        }),
-      }
-    );
+        body: payload,
+      });
+      if (geminiRes.status !== 429) break;
+    }
 
-    if (!geminiRes.ok) {
-      const detail = await geminiRes.text();
-      throw new Error(`Gemini API error ${geminiRes.status}: ${detail.slice(0, 300)}`);
+    if (!geminiRes || !geminiRes.ok) {
+      const detail = geminiRes ? await geminiRes.text() : 'no response';
+      const status = geminiRes ? geminiRes.status : 0;
+      if (status === 429) {
+        throw new Error(
+          'Gemini rate limit reached (free tier). Please wait a minute and try again.'
+        );
+      }
+      throw new Error(`Gemini API error ${status}: ${detail.slice(0, 300)}`);
     }
 
     const data = await geminiRes.json();
