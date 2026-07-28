@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
 import GradualBlur from '../components/GradualBlur';
 import ProfileMenu from '../components/ProfileMenu';
@@ -17,6 +19,27 @@ const stagger: Variants = {
 
 function Hero() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    supabase
+      .from('users')
+      .select('name')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data?.name) setName(data.name as string);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const scrollToHowItWorks = () =>
+    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -54,6 +77,15 @@ function Hero() {
           variants={stagger}
           className="space-y-8"
         >
+          {name && (
+            <motion.p
+              variants={fadeInUp}
+              className="text-white/90 text-lg md:text-xl font-medium drop-shadow"
+            >
+              Welcome back, {name} 👋
+            </motion.p>
+          )}
+
           <motion.div variants={fadeInUp} className="flex justify-center">
             <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-tight drop-shadow-lg text-glare">
               Is your skincare
@@ -77,13 +109,14 @@ function Hero() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
+              onClick={scrollToHowItWorks}
               className="btn-secondary text-sm"
             >
               Learn More
             </motion.button>
           </motion.div>
 
-          <motion.div variants={fadeInUp} className="flex items-center justify-center gap-8 pt-8 text-white/80">
+          <motion.div variants={fadeInUp} className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 text-white/80">
             <div className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#ffe4c9]" />
               <span className="text-sm">Free to use</span>
@@ -241,6 +274,11 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-[#faf5ef]">
+      <div className="fixed top-6 left-6 z-[100]">
+        <span className="font-display font-extrabold text-2xl text-white drop-shadow-lg select-none">
+          SkinTel.
+        </span>
+      </div>
       <div className="fixed top-6 right-6 z-[100] flex items-center gap-3">
         <ProfileMenu />
         <button

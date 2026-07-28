@@ -12,6 +12,19 @@ export const SKIN_CONCERNS = [
   'Uneven texture',
 ] as const;
 
+// Common cosmetic contact allergens that appear verbatim in INCI ingredient
+// lists, so they can be matched against a product's parsed ingredients.
+export const COMMON_ALLERGENS = [
+  'Fragrance',
+  'Parfum',
+  'Limonene',
+  'Linalool',
+  'Benzyl Alcohol',
+  'Lanolin',
+  'Propylene Glycol',
+  'Phenoxyethanol',
+] as const;
+
 export type AgeRange = (typeof AGE_RANGES)[number];
 export type Gender = (typeof GENDERS)[number];
 export type SkinType = (typeof SKIN_TYPES)[number];

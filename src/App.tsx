@@ -11,6 +11,7 @@ import AuthChoicePage from './pages/AuthChoicePage';
 import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import ProductsPage from './pages/ProductsPage';
+import ScanHistoryPage from './pages/ScanHistoryPage';
 
 function App() {
   const [splashDone, setSplashDone] = useState(false);
@@ -50,6 +51,14 @@ function App() {
                 element={
                   <LandingRoute>
                     <ProductsPage />
+                  </LandingRoute>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <LandingRoute>
+                    <ScanHistoryPage />
                   </LandingRoute>
                 }
               />

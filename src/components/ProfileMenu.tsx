@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2, Pencil, UserRound } from 'lucide-react';
+import { History, Loader2, Pencil, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
 import SkinTypeQuiz from './SkinTypeQuiz';
+import AllergyInput from './AllergyInput';
 import {
   AGE_RANGES,
   GENDERS,
@@ -22,6 +24,8 @@ interface ProfileRow {
   skin_type: string | null;
   hair_type: string | null;
   skin_concerns: string[] | null;
+  allergies: string[] | null;
+  is_pregnant: boolean | null;
 }
 
 function Chip({
@@ -59,6 +63,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export default function ProfileMenu() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [open, setOpen] = useState(false);
@@ -75,6 +80,8 @@ export default function ProfileMenu() {
   const [skinType, setSkinType] = useState('');
   const [hairType, setHairType] = useState('');
   const [skinConcerns, setSkinConcerns] = useState<string[]>([]);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [isPregnant, setIsPregnant] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -99,7 +106,7 @@ export default function ProfileMenu() {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('name, email, age_range, gender, skin_type, hair_type, skin_concerns')
+        .select('name, email, age_range, gender, skin_type, hair_type, skin_concerns, allergies, is_pregnant')
         .eq('id', user.id)
         .maybeSingle();
       if (error) throw error;
@@ -129,6 +136,8 @@ export default function ProfileMenu() {
     setSkinType(profile.skin_type ?? '');
     setHairType(profile.hair_type ?? '');
     setSkinConcerns(profile.skin_concerns ?? []);
+    setAllergies(profile.allergies ?? []);
+    setIsPregnant(profile.is_pregnant ?? false);
     setSaveError(null);
     setEditing(true);
   };
@@ -152,6 +161,8 @@ export default function ProfileMenu() {
         skin_type: skinType,
         hair_type: hairType,
         skin_concerns: skinConcerns,
+        allergies,
+        is_pregnant: isPregnant,
       };
       const { error } = await supabase.from('users').update(updates).eq('id', user.id);
       if (error) throw error;
@@ -244,6 +255,27 @@ export default function ProfileMenu() {
                       )}
                     </div>
                   </div>
+                  <div className="py-1.5">
+                    <span className="text-xs text-[#c4b39c] font-medium">Allergies</span>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {profile.allergies && profile.allergies.length > 0 ? (
+                        profile.allergies.map((a) => (
+                          <span
+                            key={a}
+                            className="px-2.5 py-1 rounded-lg bg-[#ffe4c9]/60 text-[#a24809] text-xs font-medium"
+                          >
+                            {a}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-[#604f42]">None listed</span>
+                      )}
+                    </div>
+                  </div>
+                  <DetailRow
+                    label="Pregnancy"
+                    value={profile.is_pregnant ? 'Pregnant / breastfeeding' : 'No'}
+                  />
                 </div>
 
                 <button
@@ -253,6 +285,17 @@ export default function ProfileMenu() {
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   Edit profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    navigate('/history');
+                  }}
+                  className="w-full mt-2 py-2.5 rounded-2xl bg-[#faf5ef] text-[#8c735c] text-sm font-medium hover:text-[#a24809] transition-colors duration-300 flex items-center justify-center gap-2"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Scan history
                 </button>
               </div>
             )}
@@ -363,6 +406,23 @@ export default function ProfileMenu() {
                     ))}
                   </div>
                 </div>
+
+                <div>
+                  <span className="block text-xs font-medium text-[#a24809] mb-1.5">Allergies</span>
+                  <AllergyInput value={allergies} onChange={setAllergies} />
+                </div>
+
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPregnant}
+                    onChange={(e) => setIsPregnant(e.target.checked)}
+                    className="w-4 h-4 accent-[#a24809] rounded"
+                  />
+                  <span className="text-xs font-medium text-[#604f42]">
+                    Currently pregnant or breastfeeding
+                  </span>
+                </label>
 
                 <div className="flex gap-2 pt-1">
                   <button

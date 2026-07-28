@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
 import SkinTypeQuiz from '../components/SkinTypeQuiz';
+import AllergyInput from '../components/AllergyInput';
 import {
   AGE_RANGES,
   GENDERS,
@@ -81,6 +82,8 @@ export default function Onboarding() {
   const [skinType, setSkinType] = useState<SkinType | ''>('');
   const [hairType, setHairType] = useState<HairType | ''>('');
   const [skinConcerns, setSkinConcerns] = useState<SkinConcern[]>([]);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [isPregnant, setIsPregnant] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -123,6 +126,8 @@ export default function Onboarding() {
           skin_type: skinType,
           hair_type: hairType,
           skin_concerns: skinConcerns,
+          allergies,
+          is_pregnant: isPregnant,
           profile_completed: true,
         });
 
@@ -288,6 +293,32 @@ export default function Onboarding() {
                   />
                 ))}
               </div>
+            </div>
+
+            <div>
+              <span className="auth-label">Known allergies</span>
+              <p className="text-xs text-[#c4b39c] mb-3">
+                Ingredients you react to — we'll warn you if a product contains them. Optional.
+              </p>
+              <AllergyInput value={allergies} onChange={setAllergies} />
+            </div>
+
+            <div>
+              <span className="auth-label">Pregnancy</span>
+              <label className="flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition-all duration-300 border-2 bg-[#faf5ef] border-transparent hover:border-[#e8aa80]/50">
+                <input
+                  type="checkbox"
+                  checked={isPregnant}
+                  onChange={(e) => setIsPregnant(e.target.checked)}
+                  className="w-4 h-4 accent-[#a24809] rounded"
+                />
+                <span className="text-sm font-medium text-[#8c735c]">
+                  I'm currently pregnant or breastfeeding
+                </span>
+              </label>
+              <p className="text-xs text-[#c4b39c] mt-2">
+                We'll flag ingredients often advised against during pregnancy.
+              </p>
             </div>
 
             <motion.button

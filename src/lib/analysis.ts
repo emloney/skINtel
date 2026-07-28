@@ -305,6 +305,21 @@ export const BAND_LABEL: Record<ScoreBand, string> = {
   avoid: 'Better to avoid',
 };
 
+/** Band from a score alone (e.g. for a saved scan-history score). */
+export function scoreBand(score: number): ScoreBand {
+  if (score >= 85) return 'excellent';
+  if (score >= 65) return 'good';
+  if (score >= 40) return 'caution';
+  return 'avoid';
+}
+
+export const BAND_HEX: Record<ScoreBand, string> = {
+  excellent: '#3f7d4d',
+  good: '#5e7d2f',
+  caution: '#a24809',
+  avoid: '#c0392b',
+};
+
 // ─── AI chat (via the summarize-analysis Edge Function) ──────────────────────
 
 export interface ChatMessage {
