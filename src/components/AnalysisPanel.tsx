@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, Ban, Check, Leaf, ShieldAlert, Sparkles } from 'lucide-react';
+import { AlertTriangle, Ban, Baby, Check, Leaf, ShieldAlert, Sparkles } from 'lucide-react';
 import { AnalysisResult, BAND_LABEL, ChatMessage, RiskLevel, ScoreBand } from '../lib/analysis';
 import AnalysisChat from './AnalysisChat';
 
@@ -165,6 +165,24 @@ export default function AnalysisPanel({
                 <li key={i} className="p-3 rounded-xl bg-[#fbe6e3] border border-[#e8c4bf]">
                   <p className="text-sm font-semibold text-[#a5281b]">{b.matched}</p>
                   {b.reason && <p className="text-xs text-[#8c735c] mt-0.5">{b.reason}</p>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Teen / tween warnings */}
+        {result.teenWarnings.length > 0 && (
+          <div className="mb-4">
+            <h4 className="flex items-center gap-1.5 text-sm font-semibold text-[#a24809] mb-2">
+              <Baby className="w-4 h-4" />
+              Not ideal for teen/tween skin
+            </h4>
+            <ul className="space-y-2">
+              {result.teenWarnings.map((w, i) => (
+                <li key={i} className="p-3 rounded-xl bg-[#ffe4c9]/40 border border-[#e8aa80]/40">
+                  <p className="text-sm font-semibold text-[#604f42]">{w.category}</p>
+                  <p className="text-xs text-[#8c735c] mt-0.5">{w.reason}</p>
                 </li>
               ))}
             </ul>

@@ -38,6 +38,7 @@ interface AnalysisResult {
   flags: Flag[];
   banned: { matched: string; reason?: string | null }[];
   beneficial: { matched: string; benefit?: string | null }[];
+  teenWarnings?: { category: string; reason?: string | null }[];
 }
 interface UserProfile {
   skinType?: string | null;
@@ -61,6 +62,9 @@ function buildSystemPrompt(
     .join('\n');
   const banned = result.banned.map((b) => `- ${b.matched}${b.reason ? `: ${b.reason}` : ''}`).join('\n');
   const good = result.beneficial.map((b) => `- ${b.matched}`).join('\n');
+  const teen = (result.teenWarnings || [])
+    .map((t) => `- ${t.category}${t.reason ? `: ${t.reason}` : ''}`)
+    .join('\n');
 
   return `You are SkinTel, a warm, trustworthy skincare assistant chatting with a user
 about one specific product they analyzed. Keep replies short and conversational (2 to 4

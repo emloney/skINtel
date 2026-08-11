@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Baby, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
 import { analyzeProduct, askAnalysis, AnalysisResult, ChatMessage, UserProfile } from '../lib/analysis';
+import { analyzeRoutine, RoutineResult } from '../lib/interactions';
 import AnalysisPanel from '../components/AnalysisPanel';
+import RoutinePanel from '../components/RoutinePanel';
 
 interface Product {
   id: number;
@@ -59,6 +61,9 @@ export default function ProductsPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<UserProfile>({});
+  const [teenMode, setTeenMode] = useState(false);
+  const [routine, setRoutine] = useState<RoutineResult | null>(null);
+  const [showRoutine, setShowRoutine] = useState(false);
   // Per-shelf-item analysis state, keyed by user_products row id.
   const [analyses, setAnalyses] = useState<Record<string, AnalysisResult>>({});
   const [analyzing, setAnalyzing] = useState<string | null>(null);
@@ -110,7 +115,7 @@ export default function ProductsPage() {
     (async () => {
       const { data } = await supabase
         .from('users')
-        .select('skin_type, skin_concerns, allergies, is_pregnant')
+        .select('skin_type, skin_concerns, allergies, is_pregnant, age_range')
         .eq('id', user.id)
         .maybeSingle();
       if (active && data) {
@@ -120,6 +125,8 @@ export default function ProductsPage() {
           allergies: data.allergies,
           isPregnant: data.is_pregnant,
         });
+        // Default teen/tween mode on for under-18 profiles; still user-toggleable.
+        if (data.age_range === 'Under 18') setTeenMode(true);
       }
     })();
     return () => {
@@ -142,7 +149,7 @@ export default function ProductsPage() {
     setAnalyzing(item.id);
     setNotice(null);
     try {
-      const result = await analyzeProduct(ingredients, profile);
+      const result = await analyzeProduct(ingredients, { ...profile, youngSkin: teenMode });
       setAnalyses((prev) => ({ ...prev, [item.id]: result }));
       setOpenPanels((prev) => ({ ...prev, [item.id]: true }));
 
@@ -205,6 +212,23 @@ export default function ProductsPage() {
       })
       .finally(() => setChatSending((prev) => ({ ...prev, [item.id]: false })));
   };
+
+  const runRoutineCheck = () => setShowRoutine((prev) => !prev);
+
+  // Keep the routine result in sync with the shelf while it's shown.
+  useEffect(() => {
+    if (!showRoutine) {
+      setRoutine(null);
+      return;
+    }
+    const products = shelf
+      .map((item) => ({
+        name: displayName(item.product),
+        ingredients: item.product.ingredients_parsed ?? [],
+      }))
+      .filter((p) => p.ingredients.length > 0);
+    setRoutine(analyzeRoutine(products));
+  }, [showRoutine, shelf]);
 
   // ── Debounced search ──
   useEffect(() => {
@@ -344,6 +368,23 @@ export default function ProductsPage() {
           </p>
         </div>
 
+        {/* Teen-safe mode banner (auto-on for under-18 profiles) */}
+        {teenMode && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/60 border border-[#e8aa80]/50 flex items-start gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/70 shrink-0">
+              <Baby className="w-5 h-5 text-[#a24809]" />
+            </div>
+            <div>
+              <p className="font-semibold text-[#a24809] text-sm">Teen-safe mode is on ✨</p>
+              <p className="text-xs text-[#8c735c] mt-0.5 leading-relaxed">
+                Because you're under 18, we automatically flag ingredients better saved for older
+                skin — like anti-aging retinoids, strong acids, and heavy fragrance. For young skin,
+                a gentle cleanser, moisturiser, and sunscreen are all you really need.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Search ── */}
         <div ref={searchBoxRef} className="relative mb-4">
           <div className="relative">
@@ -429,9 +470,25 @@ export default function ProductsPage() {
 
         {/* ── Shelf ── */}
         <div className="mt-10">
-          <h2 className="font-display font-bold text-xl text-[#a24809] mb-4">
-            Your shelf{shelf.length > 0 ? ` (${shelf.length})` : ''}
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <h2 className="font-display font-bold text-xl text-[#a24809]">
+              Your shelf{shelf.length > 0 ? ` (${shelf.length})` : ''}
+            </h2>
+            {shelf.length >= 2 && (
+              <button
+                type="button"
+                onClick={runRoutineCheck}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#faf5ef] text-[#a24809] border-2 border-[#e8aa80]/40 hover:border-[#a24809] transition-colors"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                {showRoutine ? 'Hide routine' : 'Check my routine'}
+              </button>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {showRoutine && routine && <RoutinePanel result={routine} />}
+          </AnimatePresence>
 
           {shelfLoading && (
             <div className="py-8 flex justify-center">

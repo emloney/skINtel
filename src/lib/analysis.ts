@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { teenSafetyCheck, TeenWarning } from './interactions';
 
 // ─── DB row shapes ───────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ export interface UserProfile {
   skinConcerns?: string[] | null;
   allergies?: string[] | null;
   isPregnant?: boolean | null;
+  youngSkin?: boolean | null; // teen/tween mode
 }
 
 export interface AnalysisResult {
@@ -70,6 +72,7 @@ export interface AnalysisResult {
   banned: BannedHit[];
   beneficial: Beneficial[];
   personalNotes: string[];
+  teenWarnings: TeenWarning[]; // populated only in teen/tween mode
 }
 
 export interface ReferenceData {
@@ -277,6 +280,15 @@ export function analyzeIngredients(
     );
   }
 
+  const teenWarnings = profile.youngSkin ? teenSafetyCheck(ingredients) : [];
+  if (teenWarnings.length > 0) {
+    personalNotes.push(
+      `Teen/tween mode: ${teenWarnings.length} ingredient${
+        teenWarnings.length > 1 ? 's' : ''
+      } here ${teenWarnings.length > 1 ? 'are' : 'is'} better saved for older skin.`
+    );
+  }
+
   return {
     score,
     band,
@@ -285,6 +297,7 @@ export function analyzeIngredients(
     banned,
     beneficial,
     personalNotes,
+    teenWarnings,
   };
 }
 

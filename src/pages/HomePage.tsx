@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
-import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
+import { Sparkles, Microscope, Check, LogOut, Baby } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
@@ -21,17 +21,20 @@ function Hero() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [name, setName] = useState('');
+  const [isTeen, setIsTeen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     let active = true;
     supabase
       .from('users')
-      .select('name')
+      .select('name, age_range')
       .eq('id', user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (active && data?.name) setName(data.name as string);
+        if (!active || !data) return;
+        if (data.name) setName(data.name as string);
+        if (data.age_range === 'Under 18') setIsTeen(true);
       });
     return () => {
       active = false;
@@ -84,6 +87,15 @@ function Hero() {
             >
               Welcome back, {name} 👋
             </motion.p>
+          )}
+
+          {isTeen && (
+            <motion.div variants={fadeInUp} className="flex justify-center">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-sm font-medium">
+                <Baby className="w-4 h-4" />
+                Teen-safe mode is on
+              </span>
+            </motion.div>
           )}
 
           <motion.div variants={fadeInUp} className="flex justify-center">
