@@ -1,17 +1,17 @@
 // Supabase Edge Function: summarize-analysis
 // Powers both the opening summary AND the follow-up chat for a product's
-// ingredient analysis, using the Google Gemini API.
+// ingredient analysis, using the Groq API (OpenAI-compatible, generous free tier).
 //
-// The Gemini API key is read from the GEMINI_API_KEY secret and never leaves
-// the server. Deploy from the Supabase dashboard (Edge Functions → create) or
-// with: supabase functions deploy summarize-analysis
+// The Groq API key is read from the GROQ_API_KEY secret and never leaves the
+// server. Deploy from the Supabase dashboard (Edge Functions → the existing
+// summarize-analysis function → Code → paste → Deploy) or with:
+//   supabase functions deploy summarize-analysis
 //
-// Set the secret first:
-//   Dashboard → Edge Functions → Manage secrets → GEMINI_API_KEY
-//   (or) supabase secrets set GEMINI_API_KEY=your_key_here
+// Set the secret first (get a free key at https://console.groq.com/keys):
+//   Dashboard → Edge Functions → Secrets → GROQ_API_KEY
+//   (or) supabase secrets set GROQ_API_KEY=your_key_here
 //
-// Request body:
-//   { productName, result, profile, messages? }
+// Request body:  { productName, result, profile, messages? }
 //   - messages omitted/empty → returns the opening summary
 //   - messages present        → returns the next chat reply, with context
 // Response: { reply: string }
@@ -22,8 +22,9 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Gemini's free tier. Change here if you switch models.
-const MODEL = 'gemini-2.0-flash';
+// Groq's free tier. Change here if you switch models.
+// Other options: 'llama-3.1-8b-instant' (faster), 'gemma2-9b-it'.
+const MODEL = 'llama-3.3-70b-versatile';
 
 interface Flag {
   matched: string;
@@ -48,9 +49,9 @@ interface ChatMessage {
   content: string;
 }
 
-// The persona + rules + the full analysis context. Sent as Gemini's
-// systemInstruction so it stays in force across every turn of the chat.
-function buildSystemInstruction(
+// The persona + rules + the full analysis context, sent as the system message
+// so it stays in force across every turn of the chat.
+function buildSystemPrompt(
   productName: string,
   result: AnalysisResult,
   profile: UserProfile
@@ -92,21 +93,22 @@ Skin-friendly ingredients:
 ${good || 'none'}`;
 }
 
-// Gemini requires `contents` to start with a user turn and alternate
-// user/model. Our stored conversation starts with the assistant summary, so we
-// prepend a synthetic user turn to keep the sequence valid.
-function buildContents(messages: ChatMessage[]) {
-  const seed = {
-    role: 'user',
-    parts: [{ text: 'Give me a short, friendly summary of this product’s analysis.' }],
-  };
-  const mapped = (messages || []).map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
-  if (mapped.length === 0) return [seed];
-  if (mapped[0].role === 'model') return [seed, ...mapped];
-  return mapped;
+// Build the OpenAI-style message array: system prompt, then the conversation.
+// The stored conversation starts with the assistant summary, so for an empty
+// conversation we seed a user request; otherwise we pass turns through as-is.
+function buildMessages(systemPrompt: string, messages: ChatMessage[]) {
+  const out: { role: string; content: string }[] = [{ role: 'system', content: systemPrompt }];
+  if (!messages || messages.length === 0) {
+    out.push({ role: 'user', content: "Give me a short, friendly summary of this product's analysis." });
+    return out;
+  }
+  // Keep it well-formed: if the first turn is the assistant summary, precede it
+  // with a synthetic user request.
+  if (messages[0].role === 'assistant') {
+    out.push({ role: 'user', content: "Summarize this product's analysis." });
+  }
+  for (const m of messages) out.push({ role: m.role, content: m.content });
+  return out;
 }
 
 Deno.serve(async (req: Request) => {
@@ -115,9 +117,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const apiKey = Deno.env.get('GROQ_API_KEY');
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY secret is not set on this function.');
+      throw new Error('GROQ_API_KEY secret is not set on this function.');
     }
 
     const { productName, result, profile, messages } = await req.json();
@@ -125,52 +127,46 @@ Deno.serve(async (req: Request) => {
       throw new Error('Missing or invalid analysis result in request body.');
     }
 
-    const systemInstruction = buildSystemInstruction(
-      productName ?? 'this product',
-      result,
-      profile ?? {}
-    );
-    const contents = buildContents(messages ?? []);
+    const systemPrompt = buildSystemPrompt(productName ?? 'this product', result, profile ?? {});
+    const chatMessages = buildMessages(systemPrompt, messages ?? []);
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
     const payload = JSON.stringify({
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
+      model: MODEL,
+      messages: chatMessages,
+      temperature: 0.7,
+      max_tokens: 300,
     });
 
-    // The free tier caps requests-per-minute; a burst returns 429. Retry a few
-    // times with a short backoff so a transient spike heals itself.
-    const backoffMs = [0, 3000, 6000];
-    let geminiRes: Response | null = null;
+    // Groq's free tier is generous, but retry a couple of times on 429 just in case.
+    const backoffMs = [0, 2000, 4000];
+    let groqRes: Response | null = null;
     for (let attempt = 0; attempt < backoffMs.length; attempt++) {
-      if (backoffMs[attempt] > 0) {
-        await new Promise((r) => setTimeout(r, backoffMs[attempt]));
-      }
-      geminiRes = await fetch(endpoint, {
+      if (backoffMs[attempt] > 0) await new Promise((r) => setTimeout(r, backoffMs[attempt]));
+      groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
         body: payload,
       });
-      if (geminiRes.status !== 429) break;
+      if (groqRes.status !== 429) break;
     }
 
-    if (!geminiRes || !geminiRes.ok) {
-      const detail = geminiRes ? await geminiRes.text() : 'no response';
-      const status = geminiRes ? geminiRes.status : 0;
+    if (!groqRes || !groqRes.ok) {
+      const detail = groqRes ? await groqRes.text() : 'no response';
+      const status = groqRes ? groqRes.status : 0;
       if (status === 429) {
-        throw new Error(
-          'Gemini rate limit reached (free tier). Please wait a minute and try again.'
-        );
+        throw new Error('Rate limit reached. Please wait a moment and try again.');
       }
-      throw new Error(`Gemini API error ${status}: ${detail.slice(0, 300)}`);
+      throw new Error(`Groq API error ${status}: ${detail.slice(0, 300)}`);
     }
 
-    const data = await geminiRes.json();
-    const reply: string = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    const data = await groqRes.json();
+    const reply: string = data?.choices?.[0]?.message?.content?.trim() ?? '';
 
     if (!reply) {
-      throw new Error('Gemini returned an empty response.');
+      throw new Error('The model returned an empty response.');
     }
 
     return new Response(JSON.stringify({ reply }), {
