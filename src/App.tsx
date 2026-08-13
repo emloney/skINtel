@@ -12,6 +12,7 @@ import AuthPage from './pages/AuthPage';
 import Onboarding from './pages/Onboarding';
 import ProductsPage from './pages/ProductsPage';
 import ScanHistoryPage from './pages/ScanHistoryPage';
+import SkincareChatBot from './components/SkincareChatBot';
 
 function App() {
   const [splashDone, setSplashDone] = useState(false);
@@ -88,6 +89,8 @@ function App() {
               />
               <Route path="*" element={<Navigate to="/auth" replace />} />
             </Routes>
+            {/* Floating assistant — hides itself when signed out */}
+            <SkincareChatBot />
           </BrowserRouter>
         </AuthProvider>
       )}

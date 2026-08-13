@@ -363,3 +363,20 @@ export async function askAnalysis(input: {
   if (!reply) throw new Error('No reply was returned.');
   return reply;
 }
+
+/**
+ * General skincare chat, not tied to a specific product. Backed by the
+ * skincare-chat Edge Function, which is scoped to skincare topics only.
+ */
+export async function askSkincare(input: {
+  messages: ChatMessage[];
+  profile: UserProfile & { name?: string | null };
+}): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('skincare-chat', {
+    body: input,
+  });
+  if (error) throw error;
+  const reply = (data as { reply?: string } | null)?.reply;
+  if (!reply) throw new Error('No reply was returned.');
+  return reply;
+}
