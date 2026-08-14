@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, Ban, Baby, Check, Leaf, ShieldAlert, Sparkles } from 'lucide-react';
+import { AlertTriangle, Ban, Baby, Check, Leaf, ShieldAlert, ScanSearch } from 'lucide-react';
 import { AnalysisResult, BAND_LABEL, ChatMessage, RiskLevel, ScoreBand } from '../lib/analysis';
 import AnalysisChat from './AnalysisChat';
 import ReportReaction from './ReportReaction';
@@ -121,7 +121,7 @@ export default function AnalysisPanel({
         {(aiLoading || summary) && (
           <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/50 border border-[#e8aa80]/40">
             <div className="flex items-center gap-1.5 mb-2">
-              <Sparkles className="w-4 h-4 text-[#a24809]" />
+              <ScanSearch className="w-4 h-4 text-[#a24809]" />
               <span className="text-xs font-semibold text-[#a24809] uppercase tracking-wide">
                 SkinTel summary
               </span>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Baby, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Baby, Layers, Loader2, Plus, Search, ScanSearch, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
@@ -584,7 +584,7 @@ export default function ProductsPage() {
                             </>
                           ) : (
                             <>
-                              <Sparkles className="w-3.5 h-3.5" />
+                              <ScanSearch className="w-3.5 h-3.5" />
                               {analyses[item.id]
                                 ? openPanels[item.id]
                                   ? 'Hide'

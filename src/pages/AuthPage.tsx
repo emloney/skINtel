@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { ScanSearch, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 type AuthMode = 'signin' | 'signup';
@@ -85,7 +85,7 @@ export default function AuthPage() {
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 bg-[#ffe4c9] rounded-2xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-[#a24809]" />
+              <ScanSearch className="w-6 h-6 text-[#a24809]" />
             </div>
             <span className="font-display font-bold text-2xl text-[#a24809]">SkinTel.</span>
           </div>

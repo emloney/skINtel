@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2, ArrowLeft, HelpCircle } from 'lucide-react';
+import { ScanSearch, Loader2, ArrowLeft, HelpCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
@@ -163,7 +163,7 @@ export default function Onboarding() {
         </button>
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6">
-            <Sparkles className="w-8 h-8 text-[#a24809]" />
+            <ScanSearch className="w-8 h-8 text-[#a24809]" />
           </div>
           <h1 className="text-4xl font-display font-bold text-[#a24809] mb-3">
             Tell us about your skin

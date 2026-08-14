@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
-import { Sparkles, LogIn, UserPlus } from 'lucide-react';
+import { ScanSearch, LogIn, UserPlus } from 'lucide-react';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -25,7 +25,7 @@ export default function AuthChoicePage() {
       >
         <motion.div variants={fadeInUp} className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6">
-            <Sparkles className="w-8 h-8 text-[#a24809]" />
+            <ScanSearch className="w-8 h-8 text-[#a24809]" />
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-[#a24809] mb-4">
             Welcome to SkinTel.

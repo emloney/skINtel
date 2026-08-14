@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ScanSearch, X } from 'lucide-react';
 
 export type QuizSkinType = 'Oily' | 'Dry' | 'Combination' | 'Sensitive' | 'Normal';
 
@@ -273,7 +273,7 @@ export default function SkinTypeQuiz({
               transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
               className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6"
             >
-              <Sparkles className="w-8 h-8 text-[#a24809]" />
+              <ScanSearch className="w-8 h-8 text-[#a24809]" />
             </motion.div>
             <p className="text-[#8c735c] font-medium">Reading your answers…</p>
           </motion.div>
@@ -287,7 +287,7 @@ export default function SkinTypeQuiz({
             className="py-4 flex flex-col items-center text-center"
           >
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-5">
-              <Sparkles className="w-8 h-8 text-[#a24809]" />
+              <ScanSearch className="w-8 h-8 text-[#a24809]" />
             </div>
             <p className="text-sm text-[#8c735c] mb-1">Your skin type is</p>
             <h2 className="text-4xl font-display font-extrabold text-[#a24809] mb-4">{result}</h2>

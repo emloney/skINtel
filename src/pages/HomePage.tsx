@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
-import { Sparkles, Microscope, Check, LogOut, Baby } from 'lucide-react';
+import { ScanSearch, Microscope, Check, LogOut, Baby } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
@@ -168,7 +168,7 @@ function HowItWorks() {
     },
     {
       number: '02',
-      icon: Sparkles,
+      icon: ScanSearch,
       title: 'Analyze',
       description: "Our algorithm cross-references with dermatological databases. Think of it as having a tiny scientist in your pocket.",
     },
@@ -245,7 +245,7 @@ function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#e8aa80] rounded-xl flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#a24809]" />
+              <ScanSearch className="w-5 h-5 text-[#a24809]" />
             </div>
             <span className="font-display font-bold text-xl text-[#a24809]">SkinTel.</span>
           </div>

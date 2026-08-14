@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2, MessageCircle, Send, Sparkles, X } from 'lucide-react';
+import { Loader2, MessageCircle, Send, ScanSearch, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
@@ -123,7 +123,7 @@ export default function SkincareChatBot() {
             {/* Header */}
             <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/60 border-b border-[#e8aa80]/30">
               <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/70 shrink-0">
-                <Sparkles className="w-4.5 h-4.5 text-[#a24809]" />
+                <ScanSearch className="w-4.5 h-4.5 text-[#a24809]" />
               </div>
               <div className="min-w-0">
                 <p className="font-display font-bold text-[#a24809] text-sm leading-tight">
