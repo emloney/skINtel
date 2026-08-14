@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, Ban, Baby, Check, Leaf, ShieldAlert, Sparkles } from 'lucide-react';
 import { AnalysisResult, BAND_LABEL, ChatMessage, RiskLevel, ScoreBand } from '../lib/analysis';
 import AnalysisChat from './AnalysisChat';
+import ReportReaction from './ReportReaction';
 
 const BAND_COLOR: Record<ScoreBand, { ring: string; text: string; bg: string }> = {
   excellent: { ring: '#3f7d4d', text: '#3f7d4d', bg: '#e9f4ec' },
@@ -64,6 +65,8 @@ export default function AnalysisPanel({
   chatSending,
   chatErrored,
   onSendMessage,
+  brand,
+  productName,
 }: {
   result: AnalysisResult;
   conversation?: ChatMessage[];
@@ -72,6 +75,8 @@ export default function AnalysisPanel({
   chatSending?: boolean;
   chatErrored?: boolean;
   onSendMessage?: (text: string) => void;
+  brand?: string;
+  productName?: string;
 }) {
   const color = BAND_COLOR[result.band];
   const clean = result.flags.length === 0 && result.banned.length === 0;
@@ -252,6 +257,9 @@ export default function AnalysisPanel({
             None of this product's ingredients matched our flagged-ingredient database.
           </div>
         )}
+
+        {/* Reaction reporting — most relevant when the product scored poorly */}
+        {brand && productName && <ReportReaction brand={brand} productName={productName} />}
 
         {/* Follow-up chat — only once the AI summary is available */}
         {summary && onSendMessage && (

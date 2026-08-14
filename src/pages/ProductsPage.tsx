@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Baby, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Baby, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
@@ -215,20 +215,29 @@ export default function ProductsPage() {
 
   const runRoutineCheck = () => setShowRoutine((prev) => !prev);
 
-  // Keep the routine result in sync with the shelf while it's shown.
+  // Always keep the routine result current so the button can show a count —
+  // `showRoutine` only controls whether the panel is expanded.
   useEffect(() => {
-    if (!showRoutine) {
-      setRoutine(null);
-      return;
-    }
     const products = shelf
       .map((item) => ({
         name: displayName(item.product),
         ingredients: item.product.ingredients_parsed ?? [],
       }))
       .filter((p) => p.ingredients.length > 0);
-    setRoutine(analyzeRoutine(products));
-  }, [showRoutine, shelf]);
+    setRoutine(products.length >= 2 ? analyzeRoutine(products) : null);
+  }, [shelf]);
+
+  // A serious conflict shouldn't need discovering — surface it automatically.
+  const autoShownRef = useRef(false);
+  useEffect(() => {
+    if (routine?.highestSeverity === 'high' && !autoShownRef.current) {
+      autoShownRef.current = true;
+      setShowRoutine(true);
+    }
+    if (!routine || routine.highestSeverity !== 'high') {
+      autoShownRef.current = false;
+    }
+  }, [routine]);
 
   // ── Debounced search ──
   useEffect(() => {
@@ -478,10 +487,33 @@ export default function ProductsPage() {
               <button
                 type="button"
                 onClick={runRoutineCheck}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#faf5ef] text-[#a24809] border-2 border-[#e8aa80]/40 hover:border-[#a24809] transition-colors"
+                className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-colors ${
+                  routine && routine.conflicts.length > 0
+                    ? routine.highestSeverity === 'high'
+                      ? 'bg-[#fbe6e3] text-[#a5281b] border-[#c0392b]/50 hover:border-[#c0392b]'
+                      : 'bg-[#ffe4c9]/70 text-[#a24809] border-[#e8aa80] hover:border-[#a24809]'
+                    : 'bg-[#faf5ef] text-[#a24809] border-[#e8aa80]/40 hover:border-[#a24809]'
+                }`}
               >
-                <Layers className="w-3.5 h-3.5" />
-                {showRoutine ? 'Hide routine' : 'Check my routine'}
+                {routine && routine.conflicts.length > 0 ? (
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                ) : (
+                  <Layers className="w-3.5 h-3.5" />
+                )}
+                {showRoutine
+                  ? 'Hide routine'
+                  : routine && routine.conflicts.length > 0
+                  ? `Check my routine (${routine.conflicts.length})`
+                  : 'Check my routine'}
+                {!showRoutine && routine && routine.conflicts.length > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ring-2 ring-[#faf5ef]"
+                    style={{
+                      backgroundColor:
+                        routine.highestSeverity === 'high' ? '#c0392b' : '#c87840',
+                    }}
+                  />
+                )}
               </button>
             )}
           </div>
@@ -582,6 +614,8 @@ export default function ProductsPage() {
                           chatSending={chatSending[item.id]}
                           chatErrored={chatErrored[item.id]}
                           onSendMessage={(text) => sendChatMessage(item, text)}
+                          brand={item.product.brand}
+                          productName={displayName(item.product)}
                         />
                       )}
                     </AnimatePresence>

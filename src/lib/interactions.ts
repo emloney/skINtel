@@ -143,6 +143,51 @@ const INTERACTION_RULES: InteractionRule[] = [
     message: 'Stacking an AHA and a BHA daily can compromise the skin barrier over time.',
     advice: 'Limit to a few times a week and not both on the same day.',
   },
+  {
+    a: 'niacinamide',
+    b: 'aha',
+    severity: 'low',
+    title: 'Niacinamide + exfoliating acid',
+    message:
+      'Applied back-to-back, the pH difference can reduce how well each works and may cause flushing in sensitive skin.',
+    advice: 'Leave a few minutes between them, or use them at different times of day.',
+  },
+  {
+    a: 'niacinamide',
+    b: 'vitamin_c',
+    severity: 'low',
+    title: 'Niacinamide + vitamin C',
+    message:
+      'Generally fine together in modern formulas, but some people find the pair causes mild flushing.',
+    advice: 'If you notice redness, separate them — one morning, one evening.',
+  },
+];
+
+// Flagged when one class appears in several products at once (rather than a
+// pair of different classes).
+interface DuplicateRule {
+  cls: ActiveClass;
+  severity: Severity;
+  title: string;
+  message: string;
+  advice: string;
+}
+
+const DUPLICATE_RULES: DuplicateRule[] = [
+  {
+    cls: 'retinoid',
+    severity: 'moderate',
+    title: 'More than one retinoid',
+    message: 'Using several retinoid products together multiplies the strength and the irritation.',
+    advice: 'Pick one retinoid and stick with it — more is not better here.',
+  },
+  {
+    cls: 'benzoyl_peroxide',
+    severity: 'moderate',
+    title: 'More than one benzoyl peroxide product',
+    message: 'Doubling up on benzoyl peroxide is very drying and can inflame the skin.',
+    advice: 'Use a single benzoyl peroxide product at a time.',
+  },
 ];
 
 export interface RoutineConflict {
@@ -162,6 +207,8 @@ export interface RoutineResult {
   conflicts: RoutineConflict[];
   products: RoutineProduct[];
   activeClassCount: number;
+  /** Most serious severity present, or null when there are no conflicts. */
+  highestSeverity: Severity | null;
 }
 
 /** Analyze a set of products for risky active-ingredient layering combos. */
@@ -191,6 +238,19 @@ export function analyzeRoutine(products: { name: string; ingredients: string[] }
     });
   }
 
+  // Same active class appearing in multiple products (e.g. two retinoids).
+  for (const rule of DUPLICATE_RULES) {
+    const involved = productsWithClass(rule.cls);
+    if (involved.length < 2) continue;
+    conflicts.push({
+      severity: rule.severity,
+      title: rule.title,
+      message: rule.message,
+      advice: rule.advice,
+      products: involved,
+    });
+  }
+
   const allClasses = new Set<ActiveClass>();
   classified.forEach((p) => p.set.forEach((c) => allClasses.add(c)));
 
@@ -201,6 +261,7 @@ export function analyzeRoutine(products: { name: string; ingredients: string[] }
     conflicts,
     products: classified.map((p) => ({ name: p.name, classes: Array.from(p.set) })),
     activeClassCount: allClasses.size,
+    highestSeverity: conflicts.length > 0 ? conflicts[0].severity : null,
   };
 }
 
