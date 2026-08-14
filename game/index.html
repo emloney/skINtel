@@ -1,0 +1,692 @@
+<meta charset="utf-8" />
+<title>THE DARK — horror prototype</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: "Courier New", monospace;
+    color: #b8b8b8;
+    user-select: none;
+  }
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    background: #000;
+    max-width: 100vw;
+    max-height: 100vh;
+    image-rendering: pixelated;
+    box-shadow: 0 0 60px #000 inset;
+    cursor: crosshair;
+  }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: rgba(0,0,0,0.82);
+    z-index: 10;
+    letter-spacing: 2px;
+  }
+  #overlay h1 {
+    font-size: 42px;
+    color: #7a0000;
+    text-shadow: 0 0 18px #400;
+    margin: 0 0 10px;
+    letter-spacing: 8px;
+  }
+  #overlay p { max-width: 520px; line-height: 1.6; font-size: 14px; color: #888; }
+  #overlay .key { color: #c9c9c9; }
+  #overlay button {
+    margin-top: 26px;
+    padding: 12px 30px;
+    background: #140000;
+    color: #b30000;
+    border: 1px solid #4a0000;
+    font-family: inherit;
+    font-size: 16px;
+    letter-spacing: 4px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  #overlay button:hover { background: #2a0000; color: #ff2b2b; box-shadow: 0 0 20px #500; }
+  .hidden { display: none !important; }
+  #hint {
+    position: fixed;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: #444;
+    z-index: 5;
+    pointer-events: none;
+  }
+</style>
+
+<div id="wrap">
+  <canvas id="c"></canvas>
+</div>
+<div id="hint">WASD / Arrows to move &nbsp;·&nbsp; Mouse aims the flashlight &nbsp;·&nbsp; reach the <span style="color:#2a7">green exit</span></div>
+
+<div id="overlay">
+  <h1 id="title">THE DARK</h1>
+  <p id="msg">
+    Something is in here with you. It cannot see far in the dark —<br>
+    but neither can you. Find the <span style="color:#2a7">exit</span> before it finds you.<br><br>
+    <span class="key">WASD</span> or <span class="key">Arrow keys</span> to move.<br>
+    <span class="key">Move your mouse</span> to aim the flashlight.
+  </p>
+  <button id="startBtn">ENTER</button>
+</div>
+
+<script>
+/* ============================================================
+   THE DARK — top-down horror prototype
+   Swap the art: drop your own images into game/images/ named
+   player.png, entity.png, jumpscare.png  (see IMAGES below).
+   Everything falls back to drawn placeholders if a file is missing.
+   ============================================================ */
+
+// ---- CONFIG: swap these for your real art later ----
+const IMAGES = {
+  player:    "images/player.png",     // top-down player sprite (optional)
+  entity:    "images/entity.png",     // the thing that hunts you (optional)
+  jumpscare: "images/jumpscare.png",  // full-screen face on capture (optional)
+};
+
+const TILE = 36;
+const COLS = 25;          // must be odd for the maze generator
+const ROWS = 17;          // must be odd
+const W = COLS * TILE;
+const H = ROWS * TILE;
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+canvas.width = W;
+canvas.height = H;
+
+// offscreen darkness layer — light holes are punched here, then stamped
+// over the world, so erasing darkness never erases the scene itself.
+const lightCanvas = document.createElement("canvas");
+lightCanvas.width = W;
+lightCanvas.height = H;
+const lctx = lightCanvas.getContext("2d");
+
+// ---------- image loading (with graceful fallback) ----------
+const art = {};
+function loadArt(key, src) {
+  const img = new Image();
+  img.onload = () => { art[key] = img; };
+  img.onerror = () => { art[key] = null; };
+  img.src = src;
+  art[key] = undefined; // still loading
+}
+for (const k in IMAGES) loadArt(k, IMAGES[k]);
+
+// ---------- maze generation (recursive backtracker) ----------
+// grid[y][x] === 1 => wall, 0 => floor
+let grid = [];
+function genMaze() {
+  grid = Array.from({length: ROWS}, () => Array(COLS).fill(1));
+  const stack = [[1, 1]];
+  grid[1][1] = 0;
+  const dirs = [[0,-2],[0,2],[-2,0],[2,0]];
+  while (stack.length) {
+    const [x, y] = stack[stack.length - 1];
+    const opts = [];
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx, ny = y + dy;
+      if (nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && grid[ny][nx] === 1) {
+        opts.push([nx, ny, x + dx/2, y + dy/2]);
+      }
+    }
+    if (opts.length) {
+      const [nx, ny, wx, wy] = opts[(Math.random() * opts.length) | 0];
+      grid[wy][wx] = 0;
+      grid[ny][nx] = 0;
+      stack.push([nx, ny]);
+    } else {
+      stack.pop();
+    }
+  }
+  // knock out a few extra walls so it's not a perfect maze (more escape routes)
+  for (let i = 0; i < 18; i++) {
+    const rx = 1 + ((Math.random() * (COLS - 2)) | 0);
+    const ry = 1 + ((Math.random() * (ROWS - 2)) | 0);
+    grid[ry][rx] = 0;
+  }
+}
+
+function isWall(x, y) {
+  const gx = Math.floor(x / TILE), gy = Math.floor(y / TILE);
+  if (gx < 0 || gy < 0 || gx >= COLS || gy >= ROWS) return true;
+  return grid[gy][gx] === 1;
+}
+// circle-vs-wall collision helper
+function hitsWall(x, y, r) {
+  return isWall(x - r, y - r) || isWall(x + r, y - r) ||
+         isWall(x - r, y + r) || isWall(x + r, y + r) ||
+         isWall(x, y - r) || isWall(x, y + r) ||
+         isWall(x - r, y) || isWall(x + r, y);
+}
+function cellCenter(cx, cy) { return { x: cx * TILE + TILE/2, y: cy * TILE + TILE/2 }; }
+
+// ---------- entities ----------
+const player = { x: 0, y: 0, r: 10, speed: 2.6, aim: 0 };
+const enemy  = { x: 0, y: 0, r: 12, speed: 1.9, hunting: false, huntTimer: 0, path: [], repathIn: 0 };
+let exitCell = { x: COLS - 2, y: ROWS - 2 };
+
+let state = "menu";   // menu | playing | dead | won
+let jumpT = 0;        // jumpscare animation timer
+let shake = 0;
+let heartRate = 0;    // rises as enemy gets close (audio)
+
+function resetGame() {
+  genMaze();
+  // ensure spawn + exit are floor
+  grid[1][1] = 0;
+  exitCell = { x: COLS - 2, y: ROWS - 2 };
+  grid[exitCell.y][exitCell.x] = 0;
+
+  const p = cellCenter(1, 1);
+  player.x = p.x; player.y = p.y; player.aim = 0;
+
+  // spawn enemy far from the player (near the exit region)
+  let best = null, bestD = -1;
+  for (let y = 1; y < ROWS - 1; y++) {
+    for (let x = 1; x < COLS - 1; x++) {
+      if (grid[y][x] !== 0) continue;
+      const d = Math.hypot(x - 1, y - 1);
+      if (d > bestD && !(x === exitCell.x && y === exitCell.y)) { bestD = d; best = {x, y}; }
+    }
+  }
+  const e = cellCenter(best.x, best.y);
+  enemy.x = e.x; enemy.y = e.y;
+  enemy.hunting = false; enemy.huntTimer = 0; enemy.path = []; enemy.repathIn = 0;
+
+  jumpT = 0; shake = 0; heartRate = 0;
+}
+
+// ---------- input ----------
+const keys = {};
+addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true;
+  if (["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase())) e.preventDefault();
+});
+addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+let mouse = { x: W / 2, y: H / 2 };
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - rect.left) * (W / rect.width);
+  mouse.y = (e.clientY - rect.top) * (H / rect.height);
+});
+
+// ---------- line of sight (Bresenham over grid) ----------
+function lineOfSight(x0, y0, x1, y1) {
+  let gx0 = Math.floor(x0 / TILE), gy0 = Math.floor(y0 / TILE);
+  const gx1 = Math.floor(x1 / TILE), gy1 = Math.floor(y1 / TILE);
+  const dx = Math.abs(gx1 - gx0), dy = Math.abs(gy1 - gy0);
+  const sx = gx0 < gx1 ? 1 : -1, sy = gy0 < gy1 ? 1 : -1;
+  let err = dx - dy;
+  while (true) {
+    if (grid[gy0] && grid[gy0][gx0] === 1) return false;
+    if (gx0 === gx1 && gy0 === gy1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; gx0 += sx; }
+    if (e2 < dx)  { err += dx; gy0 += sy; }
+  }
+  return true;
+}
+
+// ---------- BFS pathfinding for the hunter ----------
+function bfsPath(sx, sy, tx, ty) {
+  const key = (x, y) => y * COLS + x;
+  const q = [[sx, sy]];
+  const prev = new Map();
+  prev.set(key(sx, sy), null);
+  while (q.length) {
+    const [x, y] = q.shift();
+    if (x === tx && y === ty) break;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) continue;
+      if (grid[ny][nx] === 1) continue;
+      if (prev.has(key(nx, ny))) continue;
+      prev.set(key(nx, ny), [x, y]);
+      q.push([nx, ny]);
+    }
+  }
+  if (!prev.has(key(tx, ty))) return [];
+  const path = [];
+  let cur = [tx, ty];
+  while (cur) { path.push(cur); cur = prev.get(key(cur[0], cur[1])); }
+  return path.reverse();
+}
+
+// ---------- update ----------
+function update() {
+  if (state !== "playing") return;
+
+  // aim flashlight at mouse
+  player.aim = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+
+  // movement
+  let mx = 0, my = 0;
+  if (keys["w"] || keys["arrowup"])    my -= 1;
+  if (keys["s"] || keys["arrowdown"])  my += 1;
+  if (keys["a"] || keys["arrowleft"])  mx -= 1;
+  if (keys["d"] || keys["arrowright"]) mx += 1;
+  if (mx || my) {
+    const len = Math.hypot(mx, my);
+    mx /= len; my /= len;
+    const nx = player.x + mx * player.speed;
+    const ny = player.y + my * player.speed;
+    if (!hitsWall(nx, player.y, player.r)) player.x = nx;
+    if (!hitsWall(player.x, ny, player.r)) player.y = ny;
+  }
+
+  // --- enemy detection ---
+  const dToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+  const canSee = lineOfSight(enemy.x, enemy.y, player.x, player.y) && dToPlayer < 340;
+  // player's flashlight touching the enemy also "wakes" it
+  const angToEnemy = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+  let da = Math.abs(((angToEnemy - player.aim + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+  const litUp = da < 0.55 && dToPlayer < 300 && lineOfSight(player.x, player.y, enemy.x, enemy.y);
+
+  if (canSee || litUp) {
+    enemy.hunting = true;
+    enemy.huntTimer = 180;           // ~3s of pursuit after losing sight
+  } else if (enemy.huntTimer > 0) {
+    enemy.huntTimer--;
+    if (enemy.huntTimer === 0) enemy.hunting = false;
+  }
+
+  // --- enemy movement ---
+  const ecx = Math.floor(enemy.x / TILE), ecy = Math.floor(enemy.y / TILE);
+  let target;
+  if (enemy.hunting) {
+    target = { x: Math.floor(player.x / TILE), y: Math.floor(player.y / TILE) };
+  } else {
+    // wander toward a roaming point; pick a new one when reached
+    if (!enemy.wander || (ecx === enemy.wander.x && ecy === enemy.wander.y) || enemy.repathIn <= 0) {
+      let wx, wy;
+      do { wx = 1 + ((Math.random()*(COLS-2))|0); wy = 1 + ((Math.random()*(ROWS-2))|0); }
+      while (grid[wy][wx] === 1);
+      enemy.wander = { x: wx, y: wy };
+    }
+    target = enemy.wander;
+  }
+
+  enemy.repathIn--;
+  if (enemy.repathIn <= 0) {
+    enemy.path = bfsPath(ecx, ecy, target.x, target.y);
+    enemy.repathIn = enemy.hunting ? 12 : 40;
+  }
+
+  const spd = enemy.hunting ? enemy.speed * 1.35 : enemy.speed * 0.7;
+  if (enemy.path && enemy.path.length > 1) {
+    const nextCell = enemy.path[1];
+    const c = cellCenter(nextCell.x, nextCell.y);
+    const ang = Math.atan2(c.y - enemy.y, c.x - enemy.x);
+    enemy.x += Math.cos(ang) * spd;
+    enemy.y += Math.sin(ang) * spd;
+    if (Math.hypot(c.x - enemy.x, c.y - enemy.y) < 3) enemy.path.shift();
+  }
+
+  // proximity dread (drives heartbeat audio)
+  heartRate = Math.max(0, 1 - dToPlayer / 260);
+
+  // caught?
+  if (dToPlayer < player.r + enemy.r + 2) {
+    triggerJumpscare();
+  }
+
+  // reached exit?
+  if (Math.floor(player.x / TILE) === exitCell.x && Math.floor(player.y / TILE) === exitCell.y) {
+    win();
+  }
+
+  if (shake > 0) shake *= 0.9;
+}
+
+// ---------- rendering ----------
+function draw() {
+  ctx.save();
+  if (shake > 0.5) ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+
+  // floor + walls (dim — most of it will be hidden by darkness)
+  ctx.fillStyle = "#07070a";
+  ctx.fillRect(0, 0, W, H);
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (grid[y][x] === 1) {
+        ctx.fillStyle = "#15151c";
+        ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
+        ctx.fillStyle = "#0d0d12";
+        ctx.fillRect(x*TILE, y*TILE, TILE, 3);
+      } else {
+        ctx.fillStyle = "#0a0a0d";
+        ctx.fillRect(x*TILE+1, y*TILE+1, TILE-2, TILE-2);
+      }
+    }
+  }
+
+  // exit
+  const ex = exitCell.x*TILE, ey = exitCell.y*TILE;
+  const pulse = 0.5 + 0.5*Math.sin(performance.now()/300);
+  ctx.fillStyle = `rgba(30,${120+pulse*80},80,0.9)`;
+  ctx.fillRect(ex+6, ey+6, TILE-12, TILE-12);
+  ctx.strokeStyle = `rgba(60,255,140,${0.4+pulse*0.4})`;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(ex+4, ey+4, TILE-8, TILE-8);
+
+  // enemy (drawn in the world so darkness can hide it)
+  drawEntity();
+
+  // player
+  drawPlayer();
+
+  // darkness + flashlight mask
+  drawDarkness();
+
+  ctx.restore();
+
+  // jumpscare overlay
+  if (jumpT > 0) drawJumpscare();
+}
+
+function drawPlayer() {
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  if (art.player) {
+    ctx.rotate(player.aim + Math.PI/2);
+    const s = player.r * 3;
+    ctx.drawImage(art.player, -s/2, -s/2, s, s);
+  } else {
+    ctx.rotate(player.aim);
+    ctx.fillStyle = "#cfcfd6";
+    ctx.beginPath();
+    ctx.arc(0, 0, player.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = "#7a7a85";           // little nose showing facing
+    ctx.fillRect(player.r-2, -3, 6, 6);
+  }
+  ctx.restore();
+}
+
+function drawEntity() {
+  ctx.save();
+  ctx.translate(enemy.x, enemy.y);
+  if (art.entity) {
+    const s = enemy.r * 4.2;
+    ctx.drawImage(art.entity, -s/2, -s*0.75, s, s*1.5);
+  } else {
+    // placeholder inspired by the pale, hollow-eyed screaming entity
+    const bob = Math.sin(performance.now()/220) * 1.5;   // creepy sway
+    const R = enemy.r;
+    // gaunt, elongated pale body
+    ctx.fillStyle = enemy.hunting ? "#8f8f86" : "#5f6058";
+    ctx.beginPath();
+    ctx.moveTo(-R*0.75, R*1.7);
+    ctx.quadraticCurveTo(-R*1.0, -R*0.2, -R*0.55, -R*0.9 + bob);
+    ctx.quadraticCurveTo(0, -R*1.35 + bob, R*0.55, -R*0.9 + bob);
+    ctx.quadraticCurveTo(R*1.0, -R*0.2, R*0.75, R*1.7);
+    ctx.closePath();
+    ctx.fill();
+    // long clawing arms
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = R*0.35;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-R*0.4, -R*0.2 + bob); ctx.lineTo(-R*1.3, -R*0.9 + bob);
+    ctx.moveTo( R*0.4, -R*0.2 + bob); ctx.lineTo( R*1.3, -R*0.9 + bob);
+    ctx.stroke();
+    // pale gaunt head
+    ctx.fillStyle = enemy.hunting ? "#c8c7ba" : "#9a9a8e";
+    ctx.beginPath();
+    ctx.ellipse(0, -R*0.75 + bob, R*0.62, R*0.8, 0, 0, Math.PI*2);
+    ctx.fill();
+    // sunken eye sockets with glowing points
+    const eg = enemy.hunting ? "#ffffff" : "#c9c4b0";
+    ctx.fillStyle = "#0a0a0a";
+    ctx.beginPath(); ctx.ellipse(-R*0.28, -R*0.85 + bob, R*0.2, R*0.28, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( R*0.28, -R*0.85 + bob, R*0.2, R*0.28, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = eg;
+    ctx.shadowColor = eg; ctx.shadowBlur = enemy.hunting ? 12 : 5;
+    ctx.beginPath(); ctx.arc(-R*0.28, -R*0.82 + bob, R*0.09, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( R*0.28, -R*0.82 + bob, R*0.09, 0, Math.PI*2); ctx.fill();
+    // gaping screaming mouth
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#050505";
+    ctx.beginPath(); ctx.ellipse(0, -R*0.35 + bob, R*0.22, R*0.4, 0, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawDarkness() {
+  // Build the darkness on a SEPARATE canvas and erase the light holes there,
+  // then stamp it over the world. (Erasing on the main canvas would also
+  // erase the scene, punching through to the black page behind it.)
+  lctx.globalCompositeOperation = "source-over";
+  lctx.clearRect(0, 0, W, H);
+
+  // full darkness
+  lctx.fillStyle = "rgba(0,0,0,0.96)";
+  lctx.fillRect(0, 0, W, H);
+
+  lctx.globalCompositeOperation = "destination-out";
+
+  // tiny ambient circle right around the player
+  let g = lctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, 50);
+  g.addColorStop(0, "rgba(0,0,0,1)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  lctx.fillStyle = g;
+  lctx.beginPath(); lctx.arc(player.x, player.y, 50, 0, Math.PI*2); lctx.fill();
+
+  // flashlight cone toward the mouse
+  const range = 250, half = 0.42;
+  const grad = lctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, range);
+  grad.addColorStop(0, "rgba(0,0,0,1)");
+  grad.addColorStop(0.6, "rgba(0,0,0,0.85)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  lctx.fillStyle = grad;
+  lctx.beginPath();
+  lctx.moveTo(player.x, player.y);
+  for (let a = -half; a <= half; a += 0.04) {
+    lctx.lineTo(player.x + Math.cos(player.aim + a) * range,
+                player.y + Math.sin(player.aim + a) * range);
+  }
+  lctx.closePath();
+  lctx.fill();
+
+  // stamp the darkness over the world
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.drawImage(lightCanvas, 0, 0);
+  ctx.restore();
+
+  // red creeping vignette that intensifies as the enemy nears
+  if (heartRate > 0.02) {
+    ctx.save();
+    const v = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.7);
+    v.addColorStop(0, "rgba(0,0,0,0)");
+    v.addColorStop(1, `rgba(80,0,0,${Math.min(0.6, heartRate)})`);
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+}
+
+function drawJumpscare() {
+  const t = jumpT / 45;                 // 1 -> 0
+  ctx.save();
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+  const jitter = 14 * t;
+  ctx.translate((Math.random()-0.5)*jitter*4, (Math.random()-0.5)*jitter*4);
+  if (art.jumpscare) {
+    ctx.drawImage(art.jumpscare, 0, 0, W, H);
+  } else {
+    // placeholder inspired by the dark grinning face
+    const cx = W/2, cy = H/2;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+    // dark face emerging from black (radial so edges melt into the dark)
+    const fg = ctx.createRadialGradient(cx, cy, H*0.15, cx, cy, H*0.5);
+    fg.addColorStop(0, "#3a3a3a");
+    fg.addColorStop(0.7, "#1a1a1a");
+    fg.addColorStop(1, "#000");
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.ellipse(cx, cy, H*0.4, H*0.5, 0, 0, Math.PI*2); ctx.fill();
+    // glowing crescent eyes
+    ctx.fillStyle = "#f5f5f0";
+    ctx.shadowColor = "#fff"; ctx.shadowBlur = 30;
+    for (const sx of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(cx + sx*95, cy - 70, 30, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = "#000";       // bite the crescent
+      ctx.beginPath();
+      ctx.arc(cx + sx*95, cy - 82, 30, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = "#f5f5f0";
+    }
+    ctx.shadowBlur = 0;
+    // wide jagged toothy grin
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 80, 150, 70, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = "#e8e6dc";
+    ctx.shadowColor = "#fff"; ctx.shadowBlur = 12;
+    for (let i = -6; i <= 6; i++) {
+      const tx = cx + i * 23;
+      ctx.beginPath();
+      ctx.moveTo(tx - 11, cy + 40);
+      ctx.lineTo(tx + 11, cy + 40);
+      ctx.lineTo(tx, cy + 40 + (i % 2 ? 34 : 46));   // jagged
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+}
+
+// ---------- audio (WebAudio — no files needed) ----------
+let ac, drone, droneGain, hb;
+function initAudio() {
+  if (ac) return;
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  drone = ac.createOscillator();
+  drone.type = "sawtooth";
+  drone.frequency.value = 46;
+  droneGain = ac.createGain();
+  droneGain.gain.value = 0.03;
+  const lp = ac.createBiquadFilter();
+  lp.type = "lowpass"; lp.frequency.value = 220;
+  drone.connect(lp).connect(droneGain).connect(ac.destination);
+  drone.start();
+}
+function beat() {
+  if (!ac || state !== "playing") return;
+  if (heartRate > 0.12) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = "sine"; o.frequency.value = 55;
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25*heartRate, ac.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.18);
+    o.connect(g).connect(ac.destination);
+    o.start(); o.stop(ac.currentTime+0.2);
+  }
+  // faster beats as it gets closer
+  const interval = 900 - heartRate*650;
+  hb = setTimeout(beat, Math.max(220, interval));
+}
+function screech() {
+  if (!ac) return;
+  const dur = 0.9;
+  const o1 = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain();
+  o1.type = "sawtooth"; o2.type = "square";
+  o1.frequency.setValueAtTime(880, ac.currentTime);
+  o1.frequency.exponentialRampToValueAtTime(120, ac.currentTime+dur);
+  o2.frequency.setValueAtTime(1320, ac.currentTime);
+  o2.frequency.exponentialRampToValueAtTime(90, ac.currentTime+dur);
+  g.gain.setValueAtTime(0.5, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+  // noise burst
+  const buf = ac.createBuffer(1, ac.sampleRate*dur, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+  const ns = ac.createBufferSource(); ns.buffer = buf;
+  const ng = ac.createGain(); ng.gain.value = 0.4;
+  o1.connect(g); o2.connect(g); g.connect(ac.destination);
+  ns.connect(ng).connect(ac.destination);
+  o1.start(); o2.start(); ns.start();
+  o1.stop(ac.currentTime+dur); o2.stop(ac.currentTime+dur);
+}
+
+// ---------- game flow ----------
+const overlay = document.getElementById("overlay");
+const titleEl = document.getElementById("title");
+const msgEl   = document.getElementById("msg");
+const startBtn= document.getElementById("startBtn");
+
+function startGame() {
+  initAudio();
+  if (ac.state === "suspended") ac.resume();
+  resetGame();
+  state = "playing";
+  overlay.classList.add("hidden");
+  clearTimeout(hb); beat();
+}
+function triggerJumpscare() {
+  if (state !== "playing") return;
+  state = "dead";
+  jumpT = 45;
+  shake = 30;
+  screech();
+}
+function win() {
+  state = "won";
+  titleEl.textContent = "YOU ESCAPED";
+  titleEl.style.color = "#2a7";
+  titleEl.style.textShadow = "0 0 18px #063";
+  msgEl.innerHTML = "You made it out into the light.<br>But it's still in there... waiting for the next one.";
+  startBtn.textContent = "AGAIN";
+  overlay.classList.remove("hidden");
+}
+function showDeath() {
+  titleEl.textContent = "IT FOUND YOU";
+  titleEl.style.color = "#7a0000";
+  titleEl.style.textShadow = "0 0 18px #400";
+  msgEl.innerHTML = "The dark keeps what it catches.<br>Try again?";
+  startBtn.textContent = "RETRY";
+  overlay.classList.remove("hidden");
+}
+startBtn.addEventListener("click", startGame);
+
+// ---------- main loop ----------
+function loop() {
+  update();
+  draw();
+  if (state === "dead") {
+    jumpT--;
+    if (jumpT <= 0) { state = "deadscreen"; showDeath(); }
+  }
+  requestAnimationFrame(loop);
+}
+resetGame();
+loop();
+</script>

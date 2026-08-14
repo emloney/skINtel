@@ -2,17 +2,21 @@ import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 type AuthMode = 'signin' | 'signup';
 
 export default function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signIn, signUp, isLoading } = useAuth();
   const initialMode: AuthMode = location.pathname === '/signup' ? 'signup' : 'signin';
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setMode(location.pathname === '/signup' ? 'signup' : 'signin');
@@ -21,15 +25,35 @@ export default function AuthPage() {
   const isSignUp = mode === 'signup';
 
   const switchMode = (next: AuthMode) => {
+    setError(null);
+    setSuccessMsg(null);
     setMode(next);
     navigate(next === 'signup' ? '/signup' : '/signin', { replace: true });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // Frontend-only placeholder — wire up your auth backend here later
-    console.log(isSignUp ? 'Sign up' : 'Sign in', { name, email, password });
-    navigate('/');
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      if (isSignUp) {
+        const needsEmailConfirmation = await signUp(email, password);
+        if (needsEmailConfirmation) {
+          setSuccessMsg(
+            'Account created! Please check your email and click the confirmation link, then come back and sign in.'
+          );
+        } else {
+          navigate('/onboarding');
+        }
+      } else {
+        const profileCompleted = await signIn(email, password);
+        navigate(profileCompleted ? '/landing' : '/onboarding');
+      }
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      );
+    }
   };
 
   return (
@@ -108,6 +132,18 @@ export default function AuthPage() {
               Sign Up
             </button>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+              {successMsg}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <AnimatePresence mode="wait">
@@ -189,11 +225,16 @@ export default function AuthPage() {
 
             <motion.button
               type="submit"
+              disabled={isLoading}
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3.5 rounded-2xl bg-[#a24809] text-white font-semibold text-base hover:bg-[#8a3a07] transition-colors duration-300 shadow-md shadow-[#a24809]/20"
+              className={`w-full py-3.5 rounded-2xl bg-[#a24809] text-white font-semibold text-base hover:bg-[#8a3a07] transition-colors duration-300 shadow-md shadow-[#a24809]/20 ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              {isSignUp ? 'Create Account' : 'Sign In'}
+              {isLoading
+                ? 'Please wait…'
+                : isSignUp
+                  ? 'Create Account'
+                  : 'Sign In'}
             </motion.button>
           </form>
 

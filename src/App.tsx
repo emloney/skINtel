@@ -1,12 +1,18 @@
 import { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen';
+import GuestRoute from './components/GuestRoute';
+import OnboardingRoute from './components/OnboardingRoute';
+import LandingRoute from './components/LandingRoute';
+import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import AuthChoicePage from './pages/AuthChoicePage';
 import AuthPage from './pages/AuthPage';
-import SearchPage from './pages/SearchPage';
-import ProductPage from './pages/ProductPage';
+import Onboarding from './pages/Onboarding';
+import ProductsPage from './pages/ProductsPage';
+import ScanHistoryPage from './pages/ScanHistoryPage';
+import SkincareChatBot from './components/SkincareChatBot';
 
 function App() {
   const [splashDone, setSplashDone] = useState(false);
@@ -21,16 +27,72 @@ function App() {
       </AnimatePresence>
 
       {splashDone && (
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/auth" element={<AuthChoicePage />} />
-            <Route path="/signin" element={<AuthPage />} />
-            <Route path="/signup" element={<AuthPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/product/:id" element={<ProductPage />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Navigate to="/landing" replace />} />
+              <Route
+                path="/landing"
+                element={
+                  <LandingRoute>
+                    <HomePage />
+                  </LandingRoute>
+                }
+              />
+              <Route
+                path="/onboarding"
+                element={
+                  <OnboardingRoute>
+                    <Onboarding />
+                  </OnboardingRoute>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <LandingRoute>
+                    <ProductsPage />
+                  </LandingRoute>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <LandingRoute>
+                    <ScanHistoryPage />
+                  </LandingRoute>
+                }
+              />
+              <Route
+                path="/auth"
+                element={
+                  <GuestRoute>
+                    <AuthChoicePage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/signin"
+                element={
+                  <GuestRoute>
+                    <AuthPage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <GuestRoute>
+                    <AuthPage />
+                  </GuestRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/auth" replace />} />
+            </Routes>
+            {/* Floating assistant — hides itself when signed out */}
+            <SkincareChatBot />
+          </BrowserRouter>
+        </AuthProvider>
       )}
     </>
   );

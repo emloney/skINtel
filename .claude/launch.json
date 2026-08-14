@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "horror-game",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "game", "-l", "5599"],
+      "port": 5599,
+      "url": "http://localhost:5599"
+    },
+    {
+      "name": "skintel-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    }
+  ]
+}

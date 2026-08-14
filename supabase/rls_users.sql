@@ -1,0 +1,9 @@
+-- ============================================================================
+-- DEPRECATED: Use fix_users_table.sql instead.
+-- This file is kept for reference only.
+-- ============================================================================
+-- The fix_users_table.sql script handles:
+--   1. Adding the missing `email` column
+--   2. Enabling RLS
+--   3. Creating SELECT / INSERT / UPDATE policies for authenticated users
+-- ============================================================================

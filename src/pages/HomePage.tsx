@@ -1,20 +1,49 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
+import { motion, type Variants } from 'framer-motion';
+import { Sparkles, Microscope, Check, LogOut, Baby } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
 import GradualBlur from '../components/GradualBlur';
+import ProfileMenu from '../components/ProfileMenu';
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 };
 
-const stagger = {
+const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.15 } },
 };
 
 function Hero() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [name, setName] = useState('');
+  const [isTeen, setIsTeen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    supabase
+      .from('users')
+      .select('name, age_range')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active || !data) return;
+        if (data.name) setName(data.name as string);
+        if (data.age_range === 'Under 18') setIsTeen(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const scrollToHowItWorks = () =>
+    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
@@ -51,6 +80,24 @@ function Hero() {
           variants={stagger}
           className="space-y-8"
         >
+          {name && (
+            <motion.p
+              variants={fadeInUp}
+              className="text-white/90 text-lg md:text-xl font-medium drop-shadow"
+            >
+              Welcome back, {name} 👋
+            </motion.p>
+          )}
+
+          {isTeen && (
+            <motion.div variants={fadeInUp} className="flex justify-center">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-sm font-medium">
+                <Baby className="w-4 h-4" />
+                Teen-safe mode is on
+              </span>
+            </motion.div>
+          )}
+
           <motion.div variants={fadeInUp} className="flex justify-center">
             <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-tight drop-shadow-lg text-glare">
               Is your skincare
@@ -66,7 +113,7 @@ function Hero() {
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/search')}
+              onClick={() => navigate('/products')}
               className="btn-primary text-lg px-10 py-4"
             >
               Check My Products
@@ -74,13 +121,14 @@ function Hero() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
+              onClick={scrollToHowItWorks}
               className="btn-secondary text-sm"
             >
               Learn More
             </motion.button>
           </motion.div>
 
-          <motion.div variants={fadeInUp} className="flex items-center justify-center gap-8 pt-8 text-white/80">
+          <motion.div variants={fadeInUp} className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 text-white/80">
             <div className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#ffe4c9]" />
               <span className="text-sm">Free to use</span>
@@ -227,6 +275,12 @@ function Footer() {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleLogout = () => {
+    signOut();
+    navigate('/auth', { replace: true });
+  };
 
   return (
     <div className="relative min-h-screen bg-[#faf5ef]">
@@ -246,15 +300,17 @@ export default function HomePage() {
           </span>
         </div>
 
-        {/* Logout */}
-        <button
-          onClick={() => navigate('/auth')}
-          style={{ color: '#a24809', borderColor: '#e8aa80' }}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white/60 backdrop-blur-sm font-medium text-sm hover:bg-[#ffe4c9] transition-all duration-200 shadow-sm"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </button>
+        <div className="flex items-center gap-3">
+          <ProfileMenu />
+          <button
+            onClick={handleLogout}
+            style={{ color: '#a24809', borderColor: '#e8aa80' }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white/60 backdrop-blur-sm font-medium text-sm hover:bg-[#ffe4c9] transition-all duration-200 shadow-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
       </header>
 
       <Hero />
