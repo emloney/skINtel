@@ -479,7 +479,7 @@ export default function ProductsPage() {
             )}
           </button>
           <p className="text-xs text-[#c4b39c] text-center mt-2">
-            Works best on your phone — or search by name below.
+            Uses your camera — a phone works best, but a laptop webcam is fine too.
           </p>
         </div>
 

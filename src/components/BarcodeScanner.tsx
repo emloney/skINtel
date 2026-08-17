@@ -36,19 +36,21 @@ export default function BarcodeScanner({
       }
     };
 
+    const onDecoded = (decodedText: string) => {
+      if (handledRef.current) return;
+      handledRef.current = true;
+      stop().then(() => onDetected(decodedText));
+    };
+    const config = { fps: 10, qrbox: { width: 260, height: 160 } };
+    const noop = () => {
+      // Called constantly for frames without a barcode — ignore.
+    };
+
+    // Prefer the rear camera on phones. Laptops only have a front-facing one,
+    // so fall back to whatever camera exists rather than failing outright.
     scanner
-      .start(
-        { facingMode: 'environment' }, // rear camera
-        { fps: 10, qrbox: { width: 260, height: 160 } },
-        (decodedText) => {
-          if (handledRef.current) return;
-          handledRef.current = true;
-          stop().then(() => onDetected(decodedText));
-        },
-        () => {
-          // Called constantly for frames without a barcode — ignore.
-        }
-      )
+      .start({ facingMode: 'environment' }, config, onDecoded, noop)
+      .catch(() => scanner.start({ facingMode: 'user' }, config, onDecoded, noop))
       .then(() => {
         if (!cancelled) setStatus('scanning');
       })
