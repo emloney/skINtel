@@ -2,15 +2,17 @@
 
 Quick notes for running this locally. Should take ~5 min.
 
-## 1. Install
+## 1. Clone and install
 
 ```bash
+git clone https://github.com/emloney/skINtel.git
+cd skINtel
 npm install
 ```
 
 ## 2. Make a `.env` file
 
-In the `project/` folder (same place as `package.json`), create a file called
+In the repo root (the folder with `package.json` in it), create a file called
 `.env` with these two lines:
 
 ```
@@ -19,7 +21,11 @@ VITE_SUPABASE_ANON_KEY=...
 ```
 
 **Ask me for the values** — they're not in the repo on purpose (keys shouldn't
-be in git). Copy `.env.example` if you want the template.
+be in git). There's a `.env.example` you can copy as a template.
+
+Without this the app builds fine but shows a blank white page, with
+"Missing Supabase environment variables" in the browser console. That just
+means the `.env` is missing or misnamed.
 
 ## 3. Run it
 
