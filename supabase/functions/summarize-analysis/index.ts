@@ -22,9 +22,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Groq's free tier. Change here if you switch models.
-// Other options: 'llama-3.1-8b-instant' (faster), 'gemma2-9b-it'.
-const MODEL = 'llama-3.3-70b-versatile';
+// Groq retires models fairly often, so try a few and use whichever answers.
+// Put the preferred one first. If they all fail, the error names the last.
+const MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'openai/gpt-oss-20b',
+  'gemma2-9b-it',
+];
 
 interface Flag {
   matched: string;
@@ -134,36 +139,46 @@ Deno.serve(async (req: Request) => {
     const systemPrompt = buildSystemPrompt(productName ?? 'this product', result, profile ?? {});
     const chatMessages = buildMessages(systemPrompt, messages ?? []);
 
-    const payload = JSON.stringify({
-      model: MODEL,
-      messages: chatMessages,
-      temperature: 0.7,
-      max_tokens: 300,
-    });
-
-    // Groq's free tier is generous, but retry a couple of times on 429 just in case.
-    const backoffMs = [0, 2000, 4000];
-    let groqRes: Response | null = null;
-    for (let attempt = 0; attempt < backoffMs.length; attempt++) {
-      if (backoffMs[attempt] > 0) await new Promise((r) => setTimeout(r, backoffMs[attempt]));
-      groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const callGroq = (model: string) =>
+      fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
-        body: payload,
+        body: JSON.stringify({
+          model,
+          messages: chatMessages,
+          temperature: 0.7,
+          max_tokens: 300,
+        }),
       });
-      if (groqRes.status !== 429) break;
+
+    // Walk the model list until one answers; retry 429s with a short backoff.
+    let groqRes: Response | null = null;
+    let lastDetail = 'no response';
+    let lastStatus = 0;
+
+    outer: for (const model of MODELS) {
+      for (const delay of [0, 2000, 4000]) {
+        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+        const res = await callGroq(model);
+        if (res.ok) {
+          groqRes = res;
+          break outer;
+        }
+        lastStatus = res.status;
+        lastDetail = await res.text();
+        if (res.status === 429) continue; // rate limited — wait and retry
+        break; // model missing or another error — try the next model
+      }
     }
 
-    if (!groqRes || !groqRes.ok) {
-      const detail = groqRes ? await groqRes.text() : 'no response';
-      const status = groqRes ? groqRes.status : 0;
-      if (status === 429) {
+    if (!groqRes) {
+      if (lastStatus === 429) {
         throw new Error('Rate limit reached. Please wait a moment and try again.');
       }
-      throw new Error(`Groq API error ${status}: ${detail.slice(0, 300)}`);
+      throw new Error(`Groq API error ${lastStatus}: ${lastDetail.slice(0, 300)}`);
     }
 
     const data = await groqRes.json();
