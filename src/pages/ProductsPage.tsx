@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Baby, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Baby, Camera, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
 import { analyzeProduct, askAnalysis, AnalysisResult, ChatMessage, UserProfile } from '../lib/analysis';
 import { analyzeRoutine, RoutineResult } from '../lib/interactions';
+import { lookupBarcode, linkBarcodeToProduct, ExternalMatch } from '../lib/barcode';
 import AnalysisPanel from '../components/AnalysisPanel';
 import RoutinePanel from '../components/RoutinePanel';
+import BarcodeScanner from '../components/BarcodeScanner';
+import ExternalProductCard from '../components/ExternalProductCard';
 
 interface Product {
   id: number;
@@ -62,6 +65,13 @@ export default function ProductsPage() {
 
   const [profile, setProfile] = useState<UserProfile>({});
   const [teenMode, setTeenMode] = useState(false);
+  // Barcode scanning
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanLooking, setScanLooking] = useState(false);
+  const [externalMatch, setExternalMatch] = useState<ExternalMatch | null>(null);
+  // Set when a scan matched nothing — the next product the user picks gets
+  // this barcode attached, so future scans find it.
+  const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
   const [routine, setRoutine] = useState<RoutineResult | null>(null);
   const [showRoutine, setShowRoutine] = useState(false);
   // Per-shelf-item analysis state, keyed by user_products row id.
@@ -213,6 +223,43 @@ export default function ProductsPage() {
       .finally(() => setChatSending((prev) => ({ ...prev, [item.id]: false })));
   };
 
+  // ── Barcode scan ──
+  const handleScan = async (barcode: string) => {
+    setScannerOpen(false);
+    setScanLooking(true);
+    setNotice(null);
+    setExternalMatch(null);
+    try {
+      const result = await lookupBarcode(barcode);
+
+      if (result.source === 'catalog') {
+        setPendingBarcode(null);
+        await addToShelf({
+          id: result.id,
+          brand: result.brand,
+          product_name: result.product_name,
+          product_type: result.product_type,
+          ingredients_parsed: result.ingredients_parsed,
+        });
+        setNotice(`Found ${displayName(result as unknown as Product)} — added to your shelf.`);
+      } else if (result.source === 'openbeautyfacts') {
+        setPendingBarcode(null);
+        setExternalMatch(result);
+      } else {
+        // Nothing anywhere — let the user point us at the right product.
+        setPendingBarcode(result.barcode);
+        setNotice(
+          `We don't know barcode ${result.barcode} yet. Search for the product below and we'll remember it next time.`
+        );
+        inputRef.current?.focus();
+      }
+    } catch (err: unknown) {
+      setNotice(errorMessage(err, 'Could not look up that barcode.'));
+    } finally {
+      setScanLooking(false);
+    }
+  };
+
   const runRoutineCheck = () => setShowRoutine((prev) => !prev);
 
   // Always keep the routine result current so the button can show a count —
@@ -306,6 +353,19 @@ export default function ProductsPage() {
         .single();
       if (error) throw error;
       setShelf((prev) => [{ id: data.id, product }, ...prev]);
+
+      // A scan came up empty and the user has now identified the product —
+      // attach the barcode so the next scan finds it straight away.
+      if (pendingBarcode && user) {
+        const code = pendingBarcode;
+        setPendingBarcode(null);
+        try {
+          await linkBarcodeToProduct(product.id, code, user.id);
+          setNotice(`Thanks — barcode ${code} is now linked to ${displayName(product)}.`);
+        } catch (linkErr: unknown) {
+          console.warn('barcode link failed:', errorMessage(linkErr, 'unknown'));
+        }
+      }
     } catch (err: unknown) {
       const message = errorMessage(err, 'Could not add the product.');
       setNotice(
@@ -394,6 +454,35 @@ export default function ProductsPage() {
           </div>
         )}
 
+        {/* ── Scan ── */}
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            disabled={scanLooking}
+            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-colors duration-300 ${
+              scanLooking
+                ? 'bg-[#faf5ef] text-[#c4b39c] cursor-wait'
+                : 'bg-[#a24809] text-white hover:bg-[#8a3a07] shadow-md shadow-[#a24809]/20'
+            }`}
+          >
+            {scanLooking ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Looking up that barcode…
+              </>
+            ) : (
+              <>
+                <Camera className="w-4 h-4" />
+                Scan a barcode
+              </>
+            )}
+          </button>
+          <p className="text-xs text-[#c4b39c] text-center mt-2">
+            Works best on your phone — or search by name below.
+          </p>
+        </div>
+
         {/* ── Search ── */}
         <div ref={searchBoxRef} className="relative mb-4">
           <div className="relative">
@@ -476,6 +565,17 @@ export default function ProductsPage() {
             {notice}
           </div>
         )}
+
+        {/* Scanned product found outside our catalog */}
+        <AnimatePresence>
+          {externalMatch && (
+            <ExternalProductCard
+              match={externalMatch}
+              profile={{ ...profile, youngSkin: teenMode }}
+              onDismiss={() => setExternalMatch(null)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* ── Shelf ── */}
         <div className="mt-10">
@@ -626,6 +726,12 @@ export default function ProductsPage() {
           )}
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {scannerOpen && (
+          <BarcodeScanner onDetected={handleScan} onClose={() => setScannerOpen(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

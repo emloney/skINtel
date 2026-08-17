@@ -1,0 +1,24 @@
+{
+  "name": "SkinTel",
+  "short_name": "SkinTel",
+  "description": "Scan any skincare product and get instant, science-backed insights on what's really in it.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf5ef",
+  "theme_color": "#a24809",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
