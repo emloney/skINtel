@@ -117,8 +117,7 @@ export default function SkincareChatBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed bottom-24 right-6 z-[120] w-[22rem] max-w-[calc(100vw-3rem)] bg-white rounded-3xl shadow-xl border border-[#e8aa80]/30 flex flex-col overflow-hidden"
-            style={{ maxHeight: 'min(32rem, calc(100vh - 8rem))' }}
+            className="fixed z-[120] inset-x-3 top-[4.5rem] bottom-24 flex flex-col overflow-hidden bg-white rounded-3xl shadow-xl border border-[#e8aa80]/30 sm:inset-x-auto sm:top-auto sm:right-6 sm:bottom-24 sm:w-[22rem] sm:h-[32rem] sm:max-h-[calc(100vh-8rem)]"
           >
             {/* Header */}
             <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/60 border-b border-[#e8aa80]/30">

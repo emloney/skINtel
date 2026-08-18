@@ -198,7 +198,7 @@ export default function ProfileMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 top-full mt-3 w-80 max-h-[75vh] overflow-y-auto bg-white rounded-3xl shadow-xl border border-[#e8aa80]/30 p-6"
+            className="fixed inset-x-3 top-[4.5rem] z-[110] max-h-[calc(100vh-6rem)] overflow-y-auto bg-white rounded-3xl shadow-xl border border-[#e8aa80]/30 p-6 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-80 sm:max-h-[75vh]"
           >
             {loading && (
               <div className="py-10 flex justify-center">
