@@ -58,8 +58,8 @@ export default {
         display: ['Lexend', 'system-ui', 'sans-serif'],
         // High-contrast serif, used italic for editorial accents
         serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        // Rounded and friendly — the splash wordmark
-        round: ['"Baloo 2"', 'Lexend', 'system-ui', 'sans-serif'],
+        // Playful display face for teen/tween mode
+        round: ['Beachday', '"Baloo 2"', 'Lexend', 'system-ui', 'sans-serif'],
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
