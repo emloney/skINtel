@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Camera, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, ChevronDown, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
@@ -66,6 +66,7 @@ export default function ProductsPage() {
 
   const [profile, setProfile] = useState<UserProfile>({});
   const [teenMode, setTeenMode] = useState(false);
+  const [teenInfoOpen, setTeenInfoOpen] = useState(false);
   // Barcode scanning
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanLooking, setScanLooking] = useState(false);
@@ -433,25 +434,43 @@ export default function ProductsPage() {
           </div>
           <h1 className="text-4xl font-display font-bold text-[#a24809] mb-3">Check your products</h1>
           <p className="text-[#8c735c] text-lg max-w-md mx-auto">
-            Search for a product and add it to your shelf. We'll analyze the ingredients for your
-            skin, one product at a time.
+            Scan or search a product to see what's really in it.
           </p>
         </div>
 
-        {/* Teen-safe mode banner (auto-on for under-18 profiles) */}
+        {/* Teen-safe mode (auto-on for under-18 profiles) — kept to one line;
+            the explanation is there for anyone who wants it, not by default. */}
         {teenMode && (
-          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/60 border border-[#e8aa80]/50 flex items-start gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/70 shrink-0">
-              <KidsIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="font-semibold text-[#a24809] text-sm">Teen-safe mode is on</p>
-              <p className="text-xs text-[#8c735c] mt-0.5 leading-relaxed">
-                Because you're under 18, we automatically flag ingredients better saved for older
-                skin — like anti-aging retinoids, strong acids, and heavy fragrance. For young skin,
-                a gentle cleanser, moisturiser, and sunscreen are all you really need.
-              </p>
-            </div>
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setTeenInfoOpen((o) => !o)}
+              aria-expanded={teenInfoOpen}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#ffe4c9]/60 border border-[#e8aa80]/50 hover:border-[#a24809]/50 transition-colors"
+            >
+              <KidsIcon className="w-5 h-5 shrink-0" />
+              <span className="text-sm font-semibold text-[#a24809]">Teen-safe mode is on</span>
+              <ChevronDown
+                className={`w-4 h-4 text-[#a24809]/60 ml-auto shrink-0 transition-transform duration-200 ${
+                  teenInfoOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            <AnimatePresence initial={false}>
+              {teenInfoOpen && (
+                <motion.p
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden text-xs text-[#8c735c] leading-relaxed px-4 pt-2"
+                >
+                  We flag ingredients better saved for older skin — anti-aging retinoids, strong
+                  acids, and heavy fragrance. A gentle cleanser, moisturiser and sunscreen are all
+                  young skin really needs.
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -480,7 +499,7 @@ export default function ProductsPage() {
             )}
           </button>
           <p className="text-xs text-[#c4b39c] text-center mt-2">
-            Uses your camera — a phone works best, but a laptop webcam is fine too.
+            Or search by name below.
           </p>
         </div>
 
