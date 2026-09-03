@@ -57,7 +57,7 @@ export default function AnalysisPreview() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-[#a24809] mb-4">
+          <h2 className="text-5xl md:text-6xl font-serif italic font-light text-[#a24809] mb-4">
             See it in action
           </h2>
           <p className="text-lg text-[#8c735c] max-w-2xl mx-auto">

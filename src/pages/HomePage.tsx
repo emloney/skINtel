@@ -122,9 +122,11 @@ function Hero() {
           )}
 
           <motion.div variants={fadeInUp} className="flex justify-center">
-            <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-tight drop-shadow-lg text-glare">
+            <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-[1.1] drop-shadow-lg text-glare">
               Is your skincare
-              <span className="block"> actually safe?</span>
+              <span className="block font-serif font-light italic text-6xl md:text-8xl tracking-tight leading-[1.05] mt-1">
+                actually safe?
+              </span>
             </h1>
           </motion.div>
 
@@ -223,7 +225,10 @@ function HowItWorks() {
           variants={stagger}
           className="text-center mb-16"
         >
-          <motion.h2 variants={fadeInUp} className="text-4xl md:text-5xl font-display font-bold text-[#a24809] mb-4">
+          <motion.h2
+            variants={fadeInUp}
+            className="text-5xl md:text-6xl font-serif italic font-light text-[#a24809] mb-4"
+          >
             How It Works
           </motion.h2>
           <motion.p variants={fadeInUp} className="text-lg text-[#8c735c] max-w-2xl mx-auto">
@@ -277,7 +282,7 @@ function ClosingCTA() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="max-w-2xl mx-auto px-6 text-center"
       >
-        <h2 className="text-3xl md:text-4xl font-display font-bold text-[#a24809] mb-4">
+        <h2 className="text-4xl md:text-5xl font-serif italic font-light text-[#a24809] mb-4">
           Ready to check your shelf?
         </h2>
         <p className="text-[#8c735c] text-lg mb-8">

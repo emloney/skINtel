@@ -56,6 +56,8 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Lexend', 'system-ui', 'sans-serif'],
+        // High-contrast serif, used italic for editorial accents
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
