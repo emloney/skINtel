@@ -83,24 +83,6 @@ body {
   }
 }
 
-/* Teen/tween theme: one class on the page root swaps the lettering for a
-   rounded face, so child components pick it up without passing props. */
-.teen-theme h1,
-.teen-theme h2,
-.teen-theme h3,
-.teen-theme .btn-primary,
-.teen-theme button {
-  font-family: 'Handcaps', 'Baloo 2', Lexend, system-ui, sans-serif;
-}
-
-.teen-theme p,
-.teen-theme span,
-.teen-theme li {
-  font-family: 'Handcaps', 'Baloo 2', Inter, system-ui, sans-serif;
-}
-
-/* Baloo runs small and tight at body sizes, so give it a little room */
-.teen-theme p,
-.teen-theme li {
-  line-height: 1.65;
-}
+/* Teen/tween mode uses Handcaps only for the hero title and the SkinTel
+   wordmark. It's a display face — running it through body copy hurts
+   readability — so those two spots opt in with `font-round` instead. */
