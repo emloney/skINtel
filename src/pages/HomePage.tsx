@@ -365,7 +365,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#faf5ef]">
+    <div className={`relative min-h-screen bg-[#faf5ef] ${isTeen ? 'teen-theme' : ''}`}>
       {/* Header */}
       <header
         style={{ backgroundColor: '#F9F4EE', color: '#a24809' }}

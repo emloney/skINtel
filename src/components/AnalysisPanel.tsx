@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
-import { AlertTriangle, Ban, Baby, Check, Leaf, ShieldAlert, Sparkles } from 'lucide-react';
-import { AnalysisResult, BAND_LABEL, ChatMessage, RiskLevel, ScoreBand } from '../lib/analysis';
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertTriangle, Ban, Baby, Check, ChevronDown, Leaf, ShieldAlert, Sparkles } from 'lucide-react';
+import { AnalysisResult, BAND_LABEL, ChatMessage, Flag, RiskLevel, ScoreBand } from '../lib/analysis';
 import AnalysisChat from './AnalysisChat';
 import ReportReaction from './ReportReaction';
 
@@ -53,6 +54,98 @@ function ScoreRing({ score, band }: { score: number; band: ScoreBand }) {
         </span>
         <span className="text-[10px] text-[#8c735c] -mt-0.5">out of 100</span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * One flagged ingredient. Collapsed it's a single scannable line; the detail
+ * only appears when asked for, so a long ingredient list stays readable.
+ */
+function FlagRow({ flag, defaultOpen = false }: { flag: Flag; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const color = RISK_COLOR[flag.riskLevel];
+
+  return (
+    <li className="rounded-xl bg-[#faf5ef] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[#f4e9dc] transition-colors"
+      >
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+        <span className="flex-1 text-sm font-semibold text-[#604f42] truncate">{flag.matched}</span>
+        {flag.personal && (
+          <ShieldAlert className="w-3.5 h-3.5 text-[#a24809] shrink-0" aria-label="Relevant to your profile" />
+        )}
+        <span className="text-xs font-medium shrink-0 hidden sm:inline" style={{ color }}>
+          {RISK_LABEL[flag.riskLevel]}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-[#c4b39c] shrink-0 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3 space-y-1">
+              {flag.concern && <p className="text-xs text-[#8c735c] leading-relaxed">{flag.concern}</p>}
+              {flag.personal && (
+                <p className="text-xs font-medium text-[#a24809]">{flag.personal}</p>
+              )}
+              {flag.saferAlternative && (
+                <p className="text-xs text-[#8c735c]">
+                  <span className="text-[#5e7d2f] font-medium">Try instead:</span>{' '}
+                  {flag.saferAlternative}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </li>
+  );
+}
+
+/** Low-risk findings, tucked away so they don't crowd the important ones. */
+function MinorFlags({ flags }: { flags: Flag[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-[#8c735c] hover:text-[#a24809] transition-colors"
+      >
+        {open ? 'Hide' : 'Show'} {flags.length} minor ingredient{flags.length > 1 ? 's' : ''}
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-1.5 overflow-hidden"
+          >
+            {flags.map((f, i) => (
+              <FlagRow key={i} flag={f} />
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -201,35 +294,24 @@ export default function AnalysisPanel({
               <AlertTriangle className="w-4 h-4" />
               Worth knowing about
             </h4>
-            <ul className="space-y-2">
-              {result.flags.map((f, i) => (
-                <li key={i} className="p-3 rounded-xl bg-[#faf5ef]">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-sm font-semibold text-[#604f42]">{f.matched}</span>
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
-                      style={{ color: RISK_COLOR[f.riskLevel] }}
-                    >
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: RISK_COLOR[f.riskLevel] }}
-                      />
-                      {RISK_LABEL[f.riskLevel]}
-                    </span>
-                  </div>
-                  {f.concern && <p className="text-xs text-[#8c735c]">{f.concern}</p>}
-                  {f.personal && (
-                    <p className="text-xs font-medium text-[#a24809] mt-1">{f.personal}</p>
+            {(() => {
+              // Anything low-risk and not personally relevant is "minor" and
+              // gets tucked away, so the list leads with what actually matters.
+              const major = result.flags.filter((f) => f.riskLevel !== 'low' || f.personal);
+              const minor = result.flags.filter((f) => f.riskLevel === 'low' && !f.personal);
+              return (
+                <>
+                  {major.length > 0 && (
+                    <ul className="space-y-1.5">
+                      {major.map((f, i) => (
+                        <FlagRow key={i} flag={f} defaultOpen={major.length === 1} />
+                      ))}
+                    </ul>
                   )}
-                  {f.saferAlternative && (
-                    <p className="text-xs text-[#8c735c] mt-1">
-                      <span className="text-[#5e7d2f] font-medium">Try instead:</span>{' '}
-                      {f.saferAlternative}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+                  {minor.length > 0 && <MinorFlags flags={minor} />}
+                </>
+              );
+            })()}
           </div>
         )}
 
