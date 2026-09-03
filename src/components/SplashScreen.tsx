@@ -70,8 +70,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           style={{ width: 'clamp(6rem, 18vw, 12rem)' }}
         />
         <span
-          className="font-display font-extrabold text-[#a24809] select-none"
-          style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', letterSpacing: '-0.02em' }}
+          className="font-round font-extrabold text-[#a24809] select-none"
+          style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', letterSpacing: '0.01em' }}
         >
           SkinTel.
         </span>

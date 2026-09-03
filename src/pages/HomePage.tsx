@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
-import { Sparkles, Microscope, Check, LogOut, Baby } from 'lucide-react';
+import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
@@ -9,6 +9,7 @@ import GradualBlur from '../components/GradualBlur';
 import ProfileMenu from '../components/ProfileMenu';
 import IngredientChecker from '../components/IngredientChecker';
 import AnalysisPreview from '../components/AnalysisPreview';
+import KidsIcon from '../components/KidsIcon';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -71,9 +72,9 @@ function Hero() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
         <Grainient
-          color1="#e8aa80"
-          color2="#a24809"
-          color3="#c87840"
+          color1="#e8bb99"
+          color2="#a8663a"
+          color3="#cf9469"
           timeSpeed={0.25}
           colorBalance={0.0}
           warpStrength={1.0}
@@ -87,9 +88,9 @@ function Hero() {
           grainAmount={0.04}
           grainScale={2.0}
           grainAnimated={false}
-          contrast={1.5}
+          contrast={1.15}
           gamma={1.0}
-          saturation={1.0}
+          saturation={0.8}
           centerX={0.0}
           centerY={0.0}
           zoom={0.9}
@@ -108,14 +109,14 @@ function Hero() {
               variants={fadeInUp}
               className="text-white/90 text-lg md:text-xl font-medium drop-shadow"
             >
-              Welcome back, {name} 👋
+              Welcome back, {name}
             </motion.p>
           )}
 
           {isTeen && (
             <motion.div variants={fadeInUp} className="flex justify-center">
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-sm font-medium">
-                <Baby className="w-4 h-4" />
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-sm font-medium">
+                <KidsIcon className="w-5 h-5" />
                 Teen-safe mode is on
               </span>
             </motion.div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Baby, Camera, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, Layers, Loader2, Plus, Search, Sparkles, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../lib/errors';
@@ -12,6 +12,7 @@ import AnalysisPanel from '../components/AnalysisPanel';
 import RoutinePanel from '../components/RoutinePanel';
 import BarcodeScanner from '../components/BarcodeScanner';
 import ExternalProductCard from '../components/ExternalProductCard';
+import KidsIcon from '../components/KidsIcon';
 
 interface Product {
   id: number;
@@ -441,10 +442,10 @@ export default function ProductsPage() {
         {teenMode && (
           <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/60 border border-[#e8aa80]/50 flex items-start gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/70 shrink-0">
-              <Baby className="w-5 h-5 text-[#a24809]" />
+              <KidsIcon className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-semibold text-[#a24809] text-sm">Teen-safe mode is on ✨</p>
+              <p className="font-semibold text-[#a24809] text-sm">Teen-safe mode is on</p>
               <p className="text-xs text-[#8c735c] mt-0.5 leading-relaxed">
                 Because you're under 18, we automatically flag ingredients better saved for older
                 skin — like anti-aging retinoids, strong acids, and heavy fragrance. For young skin,
