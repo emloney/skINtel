@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
 import GradualBlur from '../components/GradualBlur';
 import ProfileMenu from '../components/ProfileMenu';
+import IngredientChecker from '../components/IngredientChecker';
+import AnalysisPreview from '../components/AnalysisPreview';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -22,6 +24,8 @@ function Hero() {
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [isTeen, setIsTeen] = useState(false);
+  // Real figures from the database, so the page never overstates what we cover.
+  const [stats, setStats] = useState<{ products: number; ingredients: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -40,6 +44,25 @@ function Hero() {
       active = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [products, harmful, ayurvedic] = await Promise.all([
+        supabase.from('indian_products').select('*', { count: 'exact', head: true }),
+        supabase.from('harmful_ingredients').select('*', { count: 'exact', head: true }),
+        supabase.from('ayurvedic_ingredients').select('*', { count: 'exact', head: true }),
+      ]);
+      if (!active) return;
+      setStats({
+        products: products.count ?? 0,
+        ingredients: (harmful.count ?? 0) + (ayurvedic.count ?? 0),
+      });
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const scrollToHowItWorks = () =>
     document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
@@ -128,6 +151,12 @@ function Hero() {
             </motion.button>
           </motion.div>
 
+          {/* Try it before going anywhere */}
+          <motion.div variants={fadeInUp} className="pt-6">
+            <p className="text-white/80 text-sm mb-3">Or check a single ingredient right now:</p>
+            <IngredientChecker />
+          </motion.div>
+
           <motion.div variants={fadeInUp} className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-8 text-white/80">
             <div className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#ffe4c9]" />
@@ -135,11 +164,15 @@ function Hero() {
             </div>
             <div className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#ffe4c9]" />
-              <span className="text-sm">10,000+ ingredients</span>
+              <span className="text-sm">
+                {stats ? `${stats.products} Indian products` : 'Indian products'}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="w-5 h-5 text-[#ffe4c9]" />
-              <span className="text-sm">Science-backed</span>
+              <span className="text-sm">
+                {stats ? `${stats.ingredients} ingredients tracked` : 'Science-backed'}
+              </span>
             </div>
           </motion.div>
         </motion.div>
@@ -232,6 +265,37 @@ function HowItWorks() {
   );
 }
 
+function ClosingCTA() {
+  const navigate = useNavigate();
+
+  return (
+    <section className="py-20 bg-[#faf5ef]">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="max-w-2xl mx-auto px-6 text-center"
+      >
+        <h2 className="text-3xl md:text-4xl font-display font-bold text-[#a24809] mb-4">
+          Ready to check your shelf?
+        </h2>
+        <p className="text-[#8c735c] text-lg mb-8">
+          Add the products you already use and see what's really in them.
+        </p>
+        <motion.button
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/products')}
+          className="px-10 py-4 rounded-full bg-[#a24809] text-white font-semibold text-lg shadow-lg shadow-[#a24809]/25 hover:bg-[#8a3a07] transition-colors duration-300"
+        >
+          Check My Products
+        </motion.button>
+      </motion.div>
+    </section>
+  );
+}
+
 function Footer() {
   const links = [
     { label: 'How It Works', href: '#how-it-works' },
@@ -315,6 +379,8 @@ export default function HomePage() {
 
       <Hero />
       <HowItWorks />
+      <AnalysisPreview />
+      <ClosingCTA />
       <Footer />
 
       <GradualBlur
