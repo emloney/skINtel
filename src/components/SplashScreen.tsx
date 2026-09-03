@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { getStoredTeenMode } from '../lib/teenMode';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -8,6 +9,8 @@ interface SplashScreenProps {
 const SPLASH_DURATION_MS = 2200;
 
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
+  // Read once on mount so the splash paints the right theme immediately.
+  const [isTeen] = useState(getStoredTeenMode);
   // True once dismissal has been triggered — stops the overlay from eating
   // clicks while it fades out (or while it's stuck invisible-but-mounted).
   const [isExiting, setIsExiting] = useState(false);
@@ -63,15 +66,20 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         transition={{ duration: 0.7, ease: 'easeOut' }}
       >
         <img
-          src="/logo.png"
+          src={isTeen ? '/kids-logo.png' : '/logo.png'}
           alt=""
           aria-hidden="true"
-          className="object-contain mix-blend-multiply select-none"
+          className={`object-contain select-none ${isTeen ? '' : 'mix-blend-multiply'}`}
           style={{ width: 'clamp(6rem, 18vw, 12rem)' }}
         />
         <span
-          className="font-round font-extrabold text-[#a24809] select-none"
-          style={{ fontSize: 'clamp(3rem, 10vw, 8rem)', letterSpacing: '0.01em' }}
+          className={`select-none text-[#a24809] ${
+            isTeen ? 'font-round font-extrabold' : 'font-display font-extrabold'
+          }`}
+          style={{
+            fontSize: 'clamp(3rem, 10vw, 8rem)',
+            letterSpacing: isTeen ? '0.01em' : '-0.02em',
+          }}
         >
           SkinTel.
         </span>

@@ -10,6 +10,7 @@ import ProfileMenu from '../components/ProfileMenu';
 import IngredientChecker from '../components/IngredientChecker';
 import AnalysisPreview from '../components/AnalysisPreview';
 import KidsIcon from '../components/KidsIcon';
+import { getStoredTeenMode, setStoredTeenMode } from '../lib/teenMode';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -24,7 +25,8 @@ function Hero() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [name, setName] = useState('');
-  const [isTeen, setIsTeen] = useState(false);
+  // Seed from the remembered value so the theme doesn't flash on load.
+  const [isTeen, setIsTeen] = useState(getStoredTeenMode);
   // Real figures from the database, so the page never overstates what we cover.
   const [stats, setStats] = useState<{ products: number; ingredients: number } | null>(null);
 
@@ -39,7 +41,10 @@ function Hero() {
       .then(({ data }) => {
         if (!active || !data) return;
         if (data.name) setName(data.name as string);
-        if (data.age_range === 'Under 18') setIsTeen(true);
+        const teen = data.age_range === 'Under 18';
+        setIsTeen(teen);
+        // Remember it so the splash can theme itself on the next visit.
+        setStoredTeenMode(teen);
       });
     return () => {
       active = false;
@@ -72,9 +77,9 @@ function Hero() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
         <Grainient
-          color1="#e8bb99"
-          color2="#a8663a"
-          color3="#cf9469"
+          color1="#f0b98d"
+          color2="#e3944f"
+          color3="#eaa870"
           timeSpeed={0.25}
           colorBalance={0.0}
           warpStrength={1.0}
@@ -125,7 +130,13 @@ function Hero() {
           <motion.div variants={fadeInUp} className="flex justify-center">
             <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-[1.1] drop-shadow-lg text-glare">
               Is your skincare
-              <span className="block font-serif font-light italic text-6xl md:text-8xl tracking-tight leading-[1.05] mt-1">
+              <span
+                className={`block mt-1 leading-[1.05] ${
+                  isTeen
+                    ? 'font-round font-extrabold text-5xl md:text-7xl'
+                    : 'font-serif font-light italic text-6xl md:text-8xl tracking-tight'
+                }`}
+              >
                 actually safe?
               </span>
             </h1>
@@ -346,6 +357,7 @@ function Footer() {
 export default function HomePage() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const isTeen = getStoredTeenMode();
 
   const handleLogout = () => {
     signOut();
@@ -361,9 +373,13 @@ export default function HomePage() {
       >
         {/* Logo + Name */}
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="SkinTel Logo" className="w-10 h-10 object-contain mix-blend-multiply" />
+          <img
+            src={isTeen ? '/kids-logo.png' : '/logo.png'}
+            alt="SkinTel Logo"
+            className={`w-10 h-10 object-contain ${isTeen ? '' : 'mix-blend-multiply'}`}
+          />
           <span
-            className="font-display font-bold text-xl tracking-tight"
+            className={`text-xl ${isTeen ? 'font-round font-extrabold' : 'font-display font-bold tracking-tight'}`}
             style={{ color: '#a24809' }}
           >
             SkinTel.
