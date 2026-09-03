@@ -21,35 +21,10 @@ const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.15 } },
 };
 
-function Hero() {
+function Hero({ name, isTeen }: { name: string; isTeen: boolean }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [name, setName] = useState('');
-  // Seed from the remembered value so the theme doesn't flash on load.
-  const [isTeen, setIsTeen] = useState(getStoredTeenMode);
   // Real figures from the database, so the page never overstates what we cover.
   const [stats, setStats] = useState<{ products: number; ingredients: number } | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-    supabase
-      .from('users')
-      .select('name, age_range')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active || !data) return;
-        if (data.name) setName(data.name as string);
-        const teen = data.age_range === 'Under 18';
-        setIsTeen(teen);
-        // Remember it so the splash can theme itself on the next visit.
-        setStoredTeenMode(teen);
-      });
-    return () => {
-      active = false;
-    };
-  }, [user]);
 
   useEffect(() => {
     let active = true;
@@ -128,21 +103,24 @@ function Hero() {
           )}
 
           <motion.div variants={fadeInUp} className="flex justify-center">
-            <h1 className="text-5xl md:text-7xl font-display font-extrabold leading-[1.1] drop-shadow-lg text-glare">
+            <h1
+              className={`leading-[1.1] drop-shadow-lg text-glare ${
+                isTeen
+                  ? 'font-round font-extrabold text-5xl md:text-7xl'
+                  : 'font-serif font-light italic text-6xl md:text-8xl tracking-tight'
+              }`}
+            >
               Is your skincare
-              <span
-                className={`block mt-1 leading-[1.05] ${
-                  isTeen
-                    ? 'font-round font-extrabold text-5xl md:text-7xl'
-                    : 'font-serif font-light italic text-6xl md:text-8xl tracking-tight'
-                }`}
-              >
-                actually safe?
-              </span>
+              <span className="block mt-1 leading-[1.05]">actually safe?</span>
             </h1>
           </motion.div>
 
-          <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+          <motion.p
+            variants={fadeInUp}
+            className={`text-white/90 max-w-2xl mx-auto leading-relaxed ${
+              isTeen ? 'text-xl md:text-2xl' : 'font-serif italic text-2xl md:text-3xl'
+            }`}
+          >
             Scan any product label and get instant, science-backed insights on what's really in your skincare. No chemistry degree required.
           </motion.p>
 
@@ -356,8 +334,31 @@ function Footer() {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const isTeen = getStoredTeenMode();
+  const { signOut, user } = useAuth();
+  const [name, setName] = useState('');
+  // Seeded from the remembered value so the theme doesn't flash, then corrected
+  // by the profile — which is the source of truth.
+  const [isTeen, setIsTeen] = useState(getStoredTeenMode);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    supabase
+      .from('users')
+      .select('name, age_range')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active || !data) return;
+        if (data.name) setName(data.name as string);
+        const teen = data.age_range === 'Under 18';
+        setIsTeen(teen);
+        setStoredTeenMode(teen); // so the splash themes itself next visit
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const handleLogout = () => {
     signOut();
@@ -399,7 +400,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <Hero />
+      <Hero name={name} isTeen={isTeen} />
       <HowItWorks />
       <AnalysisPreview />
       <ClosingCTA />
