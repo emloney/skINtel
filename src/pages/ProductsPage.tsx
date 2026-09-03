@@ -432,7 +432,9 @@ export default function ProductsPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6">
             <Search className="w-8 h-8 text-[#a24809]" />
           </div>
-          <h1 className="text-4xl font-display font-bold text-[#a24809] mb-3">Check your products</h1>
+          <h1 className="text-5xl font-serif italic font-light text-[#a24809] mb-3">
+            Check your products
+          </h1>
           <p className="text-[#8c735c] text-lg max-w-md mx-auto">
             Scan or search a product to see what's really in it.
           </p>
@@ -600,7 +602,7 @@ export default function ProductsPage() {
         {/* ── Shelf ── */}
         <div className="mt-10">
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-            <h2 className="font-display font-bold text-xl text-[#a24809]">
+            <h2 className="font-serif italic text-2xl text-[#a24809]">
               Your shelf{shelf.length > 0 ? ` (${shelf.length})` : ''}
             </h2>
             {shelf.length >= 2 && (

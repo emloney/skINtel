@@ -27,7 +27,7 @@ export default function AuthChoicePage() {
           <div className="inline-flex items-center justify-center mb-6">
             <img src="/logo.png" alt="SkinTel Logo" className="w-20 h-20 object-contain mix-blend-multiply" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-[#a24809] mb-4">
+          <h1 className="text-5xl md:text-6xl font-serif italic font-light text-[#a24809] mb-4">
             Welcome to SkinTel.
           </h1>
           <p className="text-lg text-[#8c735c] max-w-md mx-auto">
@@ -48,7 +48,7 @@ export default function AuthChoicePage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6 group-hover:scale-105 transition-transform duration-300">
                   <LogIn className="w-8 h-8 text-[#a24809]" />
                 </div>
-                <h2 className="text-2xl font-display font-bold text-[#a24809] mb-3">
+                <h2 className="text-3xl font-serif italic text-[#a24809] mb-3">
                   Sign In
                 </h2>
                 <p className="text-[#8c735c] leading-relaxed mb-8">
@@ -70,7 +70,7 @@ export default function AuthChoicePage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6 group-hover:scale-105 transition-transform duration-300">
                   <UserPlus className="w-8 h-8 text-[#a24809]" />
                 </div>
-                <h2 className="text-2xl font-display font-bold text-[#a24809] mb-3">
+                <h2 className="text-3xl font-serif italic text-[#a24809] mb-3">
                   Sign Up
                 </h2>
                 <p className="text-[#8c735c] leading-relaxed mb-8">

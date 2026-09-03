@@ -247,7 +247,7 @@ function HowItWorks() {
                 <div className="absolute top-6 right-6 text-5xl font-display font-extrabold text-[#e8aa80]/50">
                   {step.number}
                 </div>
-                <h3 className="text-2xl font-display font-bold text-[#a24809] mb-3">{step.title}</h3>
+                <h3 className="text-3xl font-serif italic text-[#a24809] mb-3">{step.title}</h3>
                 <p className="text-[#8c735c] leading-relaxed">{step.description}</p>
               </motion.div>
             );

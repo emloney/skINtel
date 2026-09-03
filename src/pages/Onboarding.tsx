@@ -167,7 +167,7 @@ export default function Onboarding() {
             alt="SkinTel"
             className="w-20 h-20 mx-auto mb-4 object-contain mix-blend-multiply"
           />
-          <h1 className="text-4xl font-display font-bold text-[#a24809] mb-3">
+          <h1 className="text-5xl font-serif italic font-light text-[#a24809] mb-3">
             Tell us about your skin
           </h1>
           <p className="text-[#8c735c] text-lg max-w-md mx-auto">

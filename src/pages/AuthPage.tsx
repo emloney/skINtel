@@ -96,7 +96,7 @@ export default function AuthPage() {
               exit={{ opacity: 0, x: isSignUp ? -20 : 20 }}
               transition={{ duration: 0.25 }}
             >
-              <h1 className="text-3xl font-display font-bold text-[#a24809] mb-2">
+              <h1 className="text-4xl font-serif italic font-light text-[#a24809] mb-2">
                 {isSignUp ? 'Create an Account' : 'Welcome Back'}
               </h1>
               <p className="text-[#8c735c] mb-8">

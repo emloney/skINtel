@@ -81,7 +81,9 @@ export default function ScanHistoryPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6">
             <History className="w-8 h-8 text-[#a24809]" />
           </div>
-          <h1 className="text-4xl font-display font-bold text-[#a24809] mb-3">Your scan history</h1>
+          <h1 className="text-5xl font-serif italic font-light text-[#a24809] mb-3">
+            Your scan history
+          </h1>
           <p className="text-[#8c735c] text-lg max-w-md mx-auto">
             Every product you've analyzed, with its safety score.
           </p>

@@ -290,7 +290,7 @@ export default function SkinTypeQuiz({
               <Sparkles className="w-8 h-8 text-[#a24809]" />
             </div>
             <p className="text-sm text-[#8c735c] mb-1">Your skin type is</p>
-            <h2 className="text-4xl font-display font-extrabold text-[#a24809] mb-4">{result}</h2>
+            <h2 className="text-5xl font-serif italic font-light text-[#a24809] mb-4">{result}</h2>
             <p className="text-sm text-[#8c735c] max-w-sm mb-8">{RESULT_INFO[result]}</p>
             <button
               type="button"
