@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+﻿/** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
@@ -59,7 +59,7 @@ export default {
         // High-contrast serif, used italic for editorial accents
         serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         // Playful display face for teen/tween mode
-        round: ['Beachday', '"Baloo 2"', 'Lexend', 'system-ui', 'sans-serif'],
+        round: ['Handcaps', '"Baloo 2"', 'Lexend', 'system-ui', 'sans-serif'],
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',

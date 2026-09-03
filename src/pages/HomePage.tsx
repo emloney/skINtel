@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
-import { Sparkles, Microscope, Check, LogOut } from 'lucide-react';
+import { Check, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import Grainient from '../components/Grainient';
@@ -187,19 +187,19 @@ function HowItWorks() {
   const steps = [
     {
       number: '01',
-      icon: Microscope,
+      icon: '/icons/scan.png',
       title: 'Scan or Type',
       description: "Snap a photo of the ingredient list or paste the text. We'll take it from there, pretty packaging won't fool us.",
     },
     {
       number: '02',
-      icon: Sparkles,
+      icon: '/icons/analyze.png',
       title: 'Analyze',
       description: "Our algorithm cross-references with dermatological databases. Think of it as having a tiny scientist in your pocket.",
     },
     {
       number: '03',
-      icon: Check,
+      icon: '/icons/results.png',
       title: 'Get Results',
       description: "Clear, color-coded ratings show you exactly what's safe and what to avoid. No confusing jargon, promise.",
     },
@@ -234,8 +234,6 @@ function HowItWorks() {
           className="grid md:grid-cols-3 gap-8"
         >
           {steps.map((step, index) => {
-            const Icon = step.icon;
-
             return (
               <motion.div
                 key={index}
@@ -244,7 +242,7 @@ function HowItWorks() {
                 className="relative bg-white rounded-3xl p-8 shadow-lg border-2 border-transparent hover:border-[#e8aa80] transition-all duration-300"
               >
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6">
-                  <Icon className="w-8 h-8 text-[#a24809]" />
+                  <img src={step.icon} alt="" aria-hidden="true" className="w-10 h-10 object-contain" />
                 </div>
                 <div className="absolute top-6 right-6 text-5xl font-display font-extrabold text-[#e8aa80]/50">
                   {step.number}

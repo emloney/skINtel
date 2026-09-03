@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,300;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;500;600;700;800&display=swap');
 
-/* Beachday — the teen/tween display face, served from public/fonts. */
+/* Handcaps - the teen/tween display face, served from public/fonts. */
 @font-face {
-  font-family: 'Beachday';
-  src: url('/fonts/beachday.otf') format('opentype'),
-       url('/fonts/beachday.ttf') format('truetype');
+  font-family: 'Handcaps';
+  src: url('/fonts/handcaps/Handcaps.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -91,13 +90,13 @@ body {
 .teen-theme h3,
 .teen-theme .btn-primary,
 .teen-theme button {
-  font-family: 'Beachday', 'Baloo 2', Lexend, system-ui, sans-serif;
+  font-family: 'Handcaps', 'Baloo 2', Lexend, system-ui, sans-serif;
 }
 
 .teen-theme p,
 .teen-theme span,
 .teen-theme li {
-  font-family: 'Beachday', 'Baloo 2', Inter, system-ui, sans-serif;
+  font-family: 'Handcaps', 'Baloo 2', Inter, system-ui, sans-serif;
 }
 
 /* Baloo runs small and tight at body sizes, so give it a little room */
