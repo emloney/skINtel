@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { friendlyAuthError } from '../lib/errors';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -50,9 +51,7 @@ export default function AuthPage() {
         navigate(profileCompleted ? '/landing' : '/onboarding');
       }
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
-      );
+      setError(friendlyAuthError(err));
     }
   };
 

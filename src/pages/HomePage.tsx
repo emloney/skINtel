@@ -117,9 +117,7 @@ function Hero({ name, isTeen }: { name: string; isTeen: boolean }) {
 
           <motion.p
             variants={fadeInUp}
-            className={`text-white/90 max-w-2xl mx-auto leading-relaxed ${
-              isTeen ? 'text-xl md:text-2xl' : 'font-serif italic text-2xl md:text-3xl'
-            }`}
+            className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed"
           >
             Scan any product label and get instant, science-backed insights on what's really in your skincare. No chemistry degree required.
           </motion.p>
@@ -247,7 +245,7 @@ function HowItWorks() {
                 <div className="absolute top-6 right-6 text-5xl font-display font-extrabold text-[#e8aa80]/50">
                   {step.number}
                 </div>
-                <h3 className="text-3xl font-serif italic text-[#a24809] mb-3">{step.title}</h3>
+                <h3 className="text-2xl font-display font-bold text-[#a24809] mb-3">{step.title}</h3>
                 <p className="text-[#8c735c] leading-relaxed">{step.description}</p>
               </motion.div>
             );
@@ -407,12 +405,12 @@ export default function HomePage() {
       <GradualBlur
         target="page"
         position="bottom"
-        height="8rem"
-        strength={2}
-        divCount={6}
+        height="5rem"
+        strength={1}
+        divCount={5}
         curve="bezier"
         exponential={true}
-        opacity={1}
+        opacity={0.7}
       />
     </div>
   );

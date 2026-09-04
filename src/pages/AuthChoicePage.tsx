@@ -48,7 +48,7 @@ export default function AuthChoicePage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6 group-hover:scale-105 transition-transform duration-300">
                   <LogIn className="w-8 h-8 text-[#a24809]" />
                 </div>
-                <h2 className="text-3xl font-serif italic text-[#a24809] mb-3">
+                <h2 className="text-2xl font-display font-bold text-[#a24809] mb-3">
                   Sign In
                 </h2>
                 <p className="text-[#8c735c] leading-relaxed mb-8">
@@ -70,7 +70,7 @@ export default function AuthChoicePage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe4c9] rounded-2xl mb-6 group-hover:scale-105 transition-transform duration-300">
                   <UserPlus className="w-8 h-8 text-[#a24809]" />
                 </div>
-                <h2 className="text-3xl font-serif italic text-[#a24809] mb-3">
+                <h2 className="text-2xl font-display font-bold text-[#a24809] mb-3">
                   Sign Up
                 </h2>
                 <p className="text-[#8c735c] leading-relaxed mb-8">

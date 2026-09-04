@@ -105,7 +105,7 @@ export default function SkincareChatBot() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label={open ? 'Close skincare assistant' : 'Open skincare assistant'}
-        className="fixed bottom-6 right-6 z-[120] flex items-center justify-center w-14 h-14 rounded-full bg-[#a24809] text-white shadow-lg shadow-[#a24809]/30 hover:bg-[#8a3a07] transition-colors"
+        className="fixed bottom-6 right-6 z-[1200] flex items-center justify-center w-14 h-14 rounded-full bg-[#a24809] text-white shadow-lg shadow-[#a24809]/30 hover:bg-[#8a3a07] transition-colors"
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </motion.button>
@@ -117,7 +117,7 @@ export default function SkincareChatBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed z-[120] inset-x-3 top-[4.5rem] bottom-24 flex flex-col overflow-hidden bg-white rounded-3xl shadow-xl border border-[#e8aa80]/30 sm:inset-x-auto sm:top-auto sm:right-6 sm:bottom-24 sm:w-[22rem] sm:h-[32rem] sm:max-h-[calc(100vh-8rem)]"
+            className="fixed z-[1200] inset-x-3 top-[4.5rem] bottom-24 flex flex-col overflow-hidden bg-white rounded-3xl shadow-xl border border-[#e8aa80]/30 sm:inset-x-auto sm:top-auto sm:right-6 sm:bottom-24 sm:w-[22rem] sm:h-[32rem] sm:max-h-[calc(100vh-8rem)]"
           >
             {/* Header */}
             <div className="flex items-center gap-2 px-5 py-4 bg-gradient-to-br from-[#fff3e6] to-[#ffe4c9]/60 border-b border-[#e8aa80]/30">

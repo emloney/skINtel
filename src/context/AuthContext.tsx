@@ -104,6 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
 
+      // Supabase deliberately doesn't error when the email is already taken —
+      // that would let anyone probe for registered addresses. It signals it by
+      // returning a user with no identities instead. Without this check the UI
+      // would cheerfully say "account created" for an existing account.
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        throw new Error('An account with this email already exists — try signing in instead.');
+      }
+
       // If Supabase requires email confirmation, data.session will be null.
       // The database trigger `on_auth_user_created` handles creating the
       // public.users row automatically — no client-side INSERT needed.
