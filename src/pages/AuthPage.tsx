@@ -10,7 +10,8 @@ type AuthMode = 'signin' | 'signup';
 export default function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signIn, signUp, isLoading } = useAuth();
+  const { signIn, signUp } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
   const initialMode: AuthMode = location.pathname === '/signup' ? 'signup' : 'signin';
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState('');
@@ -36,6 +37,7 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
+    setSubmitting(true);
     try {
       if (isSignUp) {
         const needsEmailConfirmation = await signUp(email, password);
@@ -52,6 +54,8 @@ export default function AuthPage() {
       }
     } catch (err: unknown) {
       setError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -224,12 +228,12 @@ export default function AuthPage() {
 
             <motion.button
               type="submit"
-              disabled={isLoading}
+              disabled={submitting}
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
-              className={`w-full py-3.5 rounded-2xl bg-[#a24809] text-white font-semibold text-base hover:bg-[#8a3a07] transition-colors duration-300 shadow-md shadow-[#a24809]/20 ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`w-full py-3.5 rounded-2xl bg-[#a24809] text-white font-semibold text-base hover:bg-[#8a3a07] transition-colors duration-300 shadow-md shadow-[#a24809]/20 ${submitting ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              {isLoading
+              {submitting
                 ? 'Please wait…'
                 : isSignUp
                   ? 'Create Account'

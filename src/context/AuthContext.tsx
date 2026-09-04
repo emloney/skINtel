@@ -98,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Auth actions ──
 
+  // Same as signIn: must not touch isLoading, or the page unmounts mid-request.
   const signUp = useCallback(async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
+    {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
 
@@ -125,31 +125,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Email confirmation is ON — user must verify email first
       return true;
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
+  // Note: this deliberately does NOT touch isLoading. Route guards hide their
+  // children while isLoading is true, so flipping it here unmounted the sign-in
+  // page mid-request — taking the form contents and the error message with it,
+  // which looked like the page silently reloading. Callers track their own
+  // in-flight state instead.
   const signIn = useCallback(async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
 
-      if (data.user) {
-        const completed = await fetchProfileCompleted(data.user.id);
-        setUser(toUser(data.user));
-        setProfileCompleted(completed);
-        return completed;
-      }
-
-      return false;
-    } finally {
-      setIsLoading(false);
+    if (data.user) {
+      const completed = await fetchProfileCompleted(data.user.id);
+      setUser(toUser(data.user));
+      setProfileCompleted(completed);
+      return completed;
     }
+
+    return false;
   }, []);
 
   const refreshProfileStatus = useCallback(async () => {
